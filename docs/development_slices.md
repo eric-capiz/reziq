@@ -19,8 +19,8 @@ Connect MongoDB and define collections or schemas for users, resumes, job inputs
 * MongoDB connection is working
 * User model is live with unique username and email
 * AiProviderDaily model tracks provider requests, tokens, exhausted state, and last activity
-* Resume and JobInput models are live
-* Analysis, recommendation, and export models are still pending
+* Resume, JobInput, and Analysis models are live
+* Recommendation and export models are still pending
 
 ## Slice 3: Authentication
 
@@ -112,17 +112,40 @@ Let users paste a job description (no URL import). Save the raw text and run str
 
 Build the AIService interface with provider adapters, sticky provider per analysis session, structured JSON validation, retry or repair once, usage logging, and clear failure when providers are unavailable.
 
+**Status: Done**
+* Provider order is Groq, then Cerebras, then Gemini Flash Lite
+* JSON validation with one repair retry on the same provider
+* Failures and token usage log into AiProviderDaily
+* Public UI does not expose which provider ran
+
 ## Slice 12: Groq provider
 
 Implement Groq as the primary provider using llama 3.3 70b versatile. Log requests and token usage into AiProviderDaily.
+
+**Status: Done**
+* Groq adapter uses llama 3.3 70b versatile
+* Requests and tokens are logged
 
 ## Slice 13: Gemini fallback provider
 
 Implement Google AI Studio Gemini Flash as fallback when Groq fails or hits limits. Keep the same provider for the rest of that analysis session after switch. Disclose provider use in privacy copy as needed.
 
+**Status: Done for current stage**
+* Cerebras gpt oss 120b is backup #2
+* Gemini 2.5 Flash Lite is last resort
+* Sticky behavior is per analysis attempt with repair on the same provider
+* Privacy disclosure copy can expand later
+
 ## Slice 14: Fit analysis engine
 
 Compare structured resume vs structured job data. Produce Strong fit, Possible fit, or Poor fit with evidence for matches, partial matches, and gaps. No public percentage scores. Cache results for the same inputs. Consume a user use only after a successful analysis.
+
+**Status: Done**
+* Analyze step runs fit analysis and shows verdict with evidence
+* Results cache per user resume job combo
+* Fresh reruns consume another use
+* Cached loads do not consume another use
+* Spinner copy only while analyzing
 
 ## Slice 15: Recommendation workflow
 

@@ -166,17 +166,17 @@ export function AdminDashboardClient({
           </Button>
         </div>
 
-        <div className="mt-7 grid gap-4 md:grid-cols-3">
+        <div className="mt-7 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {PROVIDER_ORDER.map((provider) => {
             const stats = aiStats.providers[provider];
             return (
               <article
                 key={provider}
-                className="rounded-3xl border border-white/10 bg-[#0B0F14] p-4"
+                className="rounded-3xl border border-white/10 bg-[#0B0F14] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-[0_12px_30px_rgba(0,0,0,0.25)] sm:p-5"
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold tracking-wide">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold tracking-wide sm:text-base">
                       {stats.label}
                     </p>
                     <p className="mt-1 text-xs text-white/45">
@@ -187,29 +187,29 @@ export function AdminDashboardClient({
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${lampStyles[stats.lamp]}`}
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${lampStyles[stats.lamp]}`}
                   >
                     {lampLabels[stats.lamp]}
                   </span>
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-white/70">
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-white/70 sm:grid-cols-4 lg:grid-cols-2">
                   <div>
                     <dt className="text-white/40">Requests today</dt>
-                    <dd className="font-medium text-white">{stats.requests}</dd>
+                    <dd className="mt-0.5 font-medium text-white">{stats.requests}</dd>
                   </div>
                   <div>
                     <dt className="text-white/40">Est. analyses left</dt>
-                    <dd className="font-medium text-white">
+                    <dd className="mt-0.5 font-medium text-white">
                       {stats.estimatedAnalysesLeft}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-white/40">Tokens in</dt>
-                    <dd className="font-medium text-white">{stats.tokensIn}</dd>
+                    <dd className="mt-0.5 font-medium text-white">{stats.tokensIn}</dd>
                   </div>
                   <div>
                     <dt className="text-white/40">Tokens out</dt>
-                    <dd className="font-medium text-white">{stats.tokensOut}</dd>
+                    <dd className="mt-0.5 font-medium text-white">{stats.tokensOut}</dd>
                   </div>
                 </dl>
                 {stats.lastError ? (
@@ -239,7 +239,74 @@ export function AdminDashboardClient({
           used across {totalAllowance} allotted.
         </p>
 
-        <div className="mt-7 overflow-x-auto rounded-3xl border border-white/10">
+        <div className="mt-7 space-y-3 md:hidden">
+          {users.map((user) => (
+            <article
+              key={user.id}
+              className="rounded-3xl border border-white/10 bg-[#0B0F14]/70 p-4 transition-all duration-200 hover:border-[#FF5C35]/35 hover:shadow-[0_0_24px_rgba(255,92,53,0.12)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-white">{user.username}</p>
+                  <p className="mt-1 truncate text-xs text-white/50">{user.email}</p>
+                </div>
+                <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[0.7rem] tracking-wide text-white/65 uppercase">
+                  {user.role}
+                </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                  <p className="text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                    Used today
+                  </p>
+                  <p className="mt-1 font-medium text-white">{user.usesUsedToday}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
+                  <p className="text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                    Left
+                  </p>
+                  <p className="mt-1 font-medium text-[#7CFFB2]">{user.remainingUses}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-end gap-3">
+                <div className="flex-1">
+                  <label
+                    className="mb-1.5 block text-[0.65rem] tracking-[0.14em] text-white/40 uppercase"
+                    htmlFor={`allowance-${user.id}`}
+                  >
+                    Daily allowance
+                  </label>
+                  <Input
+                    id={`allowance-${user.id}`}
+                    type="number"
+                    min={0}
+                    className="h-10 w-full rounded-xl border-white/15 bg-[#151B24] text-white"
+                    value={drafts[user.id] ?? "0"}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [user.id]: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-10 rounded-full bg-[#FF5C35] px-4 text-white hover:bg-[#ff7a57]"
+                  disabled={pending}
+                  onClick={() => saveAllowance(user.id)}
+                >
+                  Save
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-7 hidden overflow-hidden rounded-3xl border border-white/10 md:block">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-white/10 bg-[#0B0F14] text-white/55">
               <tr>

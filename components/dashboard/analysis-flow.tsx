@@ -56,6 +56,39 @@ type JobState = {
   structured: StructuredJob;
 };
 
+type EvidenceItem = {
+  label: string;
+  detail: string;
+  resumeEvidence: string;
+  jobEvidence: string;
+};
+
+type AnalysisState = {
+  id: string;
+  verdict: "strong" | "possible" | "poor";
+  summary: string;
+  matches: EvidenceItem[];
+  partialMatches: EvidenceItem[];
+  gaps: EvidenceItem[];
+  guidance: string;
+  cached: boolean;
+};
+
+const verdictStyles = {
+  strong: {
+    label: "Strong fit",
+    className: "border-[#7CFFB2]/40 bg-[#0F1A16] text-[#7CFFB2]",
+  },
+  possible: {
+    label: "Possible fit",
+    className: "border-[#00C2FF]/40 bg-[#0D1820] text-[#00C2FF]",
+  },
+  poor: {
+    label: "Poor fit",
+    className: "border-[#FF5C35]/40 bg-[#1A1010] text-[#FF5C35]",
+  },
+} as const;
+
 const STEP_META = [
   {
     n: "01",
@@ -104,6 +137,9 @@ export function AnalysisFlow({
   const [resume, setResume] = useState<ResumeState | null>(null);
   const [jobText, setJobText] = useState("");
   const [job, setJob] = useState<JobState | null>(null);
+  const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [usesLeft, setUsesLeft] = useState(remainingUses);
 
   const outOfUsesMessage = useMemo(() => {
     if (canUpload) return null;
@@ -137,6 +173,7 @@ export function AnalysisFlow({
     setResume(null);
     setJob(null);
     setJobText("");
+    setAnalysis(null);
     setStep(0);
   }
 
@@ -168,6 +205,7 @@ export function AnalysisFlow({
         extractionError: data.extractionError,
       });
       setJob(null);
+      setAnalysis(null);
       toast.success("Resume uploaded and structured");
       setStep(1);
     });
@@ -199,6 +237,7 @@ export function AnalysisFlow({
         return;
       }
       setJob({ id: data.id, structured: data.structured });
+      setAnalysis(null);
       toast.success("Job description saved and structured");
       setStep(2);
     });
@@ -217,8 +256,58 @@ export function AnalysisFlow({
       setJob(null);
       setJobText("");
       setFile(null);
+      setAnalysis(null);
       setStep(0);
       toast.success("Resume deleted");
+    });
+  }
+
+  async function runAnalysis(force = false) {
+    if (usesLeft <= 0) {
+      toast.error(outOfUsesMessage ?? "Out of uses today");
+      return;
+    }
+    if (!resume?.id || !job?.id) {
+      toast.error("Resume and job are required");
+      return;
+    }
+
+    setAnalyzing(true);
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/analyses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            resumeId: resume.id,
+            jobId: job.id,
+            force,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error ?? "Analysis failed");
+          return;
+        }
+        setAnalysis({
+          id: data.analysis.id,
+          verdict: data.analysis.verdict,
+          summary: data.analysis.summary,
+          matches: data.analysis.matches ?? [],
+          partialMatches: data.analysis.partialMatches ?? [],
+          gaps: data.analysis.gaps ?? [],
+          guidance: data.analysis.guidance ?? "",
+          cached: Boolean(data.cached),
+        });
+        if (typeof data.remainingUses === "number") {
+          setUsesLeft(data.remainingUses);
+        }
+        toast.success(
+          data.cached ? "Loaded saved fit result" : "Fit analysis complete"
+        );
+      } finally {
+        setAnalyzing(false);
+      }
     });
   }
 
@@ -457,6 +546,7 @@ export function AnalysisFlow({
                   onChange={(e) => {
                     setJobText(e.target.value);
                     setJob(null);
+                    setAnalysis(null);
                   }}
                 />
 
@@ -523,8 +613,8 @@ export function AnalysisFlow({
                   Read the fit
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
-                  Analysis lands in the next batch. Your resume and job stay ready
-                  here. One use will be deducted only after a successful analysis.
+                  Compare your resume to the job with evidence. One use is deducted
+                  only after a successful analysis. Uses left: {usesLeft}.
                 </p>
               </div>
               <span className="font-[family-name:var(--font-editorial)] text-5xl italic text-[#7CFFB2] sm:text-6xl">
@@ -536,17 +626,102 @@ export function AnalysisFlow({
               <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/60">
                 Save a structured job first, then this step unlocks.
               </div>
+            ) : analyzing ? (
+              <div className="mt-8 rounded-3xl border border-[#7CFFB2]/25 bg-[#0B0F14]/50 p-6">
+                <div className="flex items-center gap-3">
+                  <span className="size-3 animate-pulse rounded-full bg-[#7CFFB2]" />
+                  <p className="font-[family-name:var(--font-editorial)] text-xl italic text-white">
+                    Reading your fit...
+                  </p>
+                </div>
+                <p className="mt-3 text-sm text-white/60">
+                  Comparing your experience to the posting and gathering evidence.
+                  This can take a moment.
+                </p>
+              </div>
+            ) : analysis ? (
+              <div className="mt-8 space-y-4">
+                <div
+                  className={`rounded-3xl border p-5 ${verdictStyles[analysis.verdict].className}`}
+                >
+                  <p className="text-xs font-semibold tracking-[0.16em] uppercase">
+                    {verdictStyles[analysis.verdict].label}
+                    {analysis.cached ? " · Saved result" : ""}
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">
+                    {analysis.summary}
+                  </p>
+                </div>
+
+                {[
+                  { title: "Matches", items: analysis.matches, tone: "text-[#7CFFB2]" },
+                  {
+                    title: "Partial matches",
+                    items: analysis.partialMatches,
+                    tone: "text-[#00C2FF]",
+                  },
+                  { title: "Gaps", items: analysis.gaps, tone: "text-[#FF5C35]" },
+                ].map((group) =>
+                  group.items.length ? (
+                    <div
+                      key={group.title}
+                      className="rounded-3xl border border-white/10 bg-[#0B0F14]/50 p-5"
+                    >
+                      <p className={`text-xs font-semibold tracking-[0.16em] uppercase ${group.tone}`}>
+                        {group.title}
+                      </p>
+                      <ul className="mt-3 space-y-3">
+                        {group.items.map((item, index) => (
+                          <li key={`${group.title}-${index}`} className="text-sm text-white/70">
+                            <p className="font-medium text-white">{item.label}</p>
+                            <p className="mt-1">{item.detail}</p>
+                            {item.resumeEvidence ? (
+                              <p className="mt-1 text-xs text-white/45">
+                                Resume: {item.resumeEvidence}
+                              </p>
+                            ) : null}
+                            {item.jobEvidence ? (
+                              <p className="mt-1 text-xs text-white/45">
+                                Job: {item.jobEvidence}
+                              </p>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null
+                )}
+
+                {analysis.guidance ? (
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/70">
+                    <p className="text-xs font-semibold tracking-[0.16em] text-white/50 uppercase">
+                      Guidance
+                    </p>
+                    <p className="mt-2">{analysis.guidance}</p>
+                  </div>
+                ) : null}
+
+                <Button
+                  type="button"
+                  className="rounded-full bg-[#7CFFB2] px-5 text-[#0B0F14] hover:bg-white"
+                  disabled={pending || analyzing || usesLeft <= 0}
+                  onClick={() => runAnalysis(true)}
+                >
+                  Run analysis again
+                </Button>
+              </div>
             ) : (
               <div className="mt-8 rounded-3xl border border-[#7CFFB2]/25 bg-[#0B0F14]/50 p-5">
                 <p className="text-sm text-white/70">
-                  Resume and job are ready. Fit analysis is next.
+                  Resume and job are ready. Run the fit read when you are.
                 </p>
                 <Button
                   type="button"
-                  className="mt-5 rounded-full bg-white/10 px-5 text-white"
-                  disabled
+                  className="mt-5 rounded-full bg-[#7CFFB2] px-5 text-[#0B0F14] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_30px_rgba(124,255,178,0.35)]"
+                  disabled={pending || analyzing || usesLeft <= 0}
+                  onClick={() => runAnalysis(false)}
                 >
-                  Analyze (coming next)
+                  Analyze fit
                 </Button>
               </div>
             )}

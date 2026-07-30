@@ -45,10 +45,11 @@ Discussion of potential technical risks and alternative approaches. As each item
 * **MVP providers (prefer no pay, no card on file):**
   1. Primary: Groq (`llama-3.3-70b-versatile`) for best free quality and speed
   2. Backup: Cerebras Free Trial (`gpt-oss-120b`) for volume after Groq
-  3. Last resort: Google AI Studio Gemini Flash Lite
+  3. Last resort: Google AI Studio Gemini Flash Lite (`gemini-2.5-flash-lite`)
 * Skip Hugging Face for MVP.
 * Skip backups that require payment or a card on file when a free path exists (for example OpenRouter paid top ups).
 * If all configured providers fail or hit free limits: show a clear message that free AI processing is unavailable for now.
+* Regular users see spinner copy only. Provider names stay in admin and server logs.
 * Rough admin estimate with current console caps and a ~12k tokens per analysis guess: Groq ~8, Cerebras ~83, Gemini Flash Lite ~125 (shared across all users; model and quota dependent).
 
 ## 5. Evidence based match scores that feel fake
