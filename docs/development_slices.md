@@ -9,18 +9,20 @@ Scaffold the Next.js app with TypeScript, Tailwind, and a UI component setup. Es
 **Status: Done**
 * Next.js, TypeScript, Tailwind, and shadcn UI are set up
 * App shell, routing, providers, and env wiring are in place
-* Locked visual theme is the coral mint near black welcome style
+* Locked visual theme is the coral mint near black welcome style (ink, coral, mint, cyan; Fraunces and DM Sans)
 
 ## Slice 2: MongoDB and core data models
 
 Connect MongoDB and define collections or schemas for users, resumes, job inputs, analyses, recommendations, exports, and AI usage. Include unique indexes for email and username.
 
-**Status: Partial**
+**Status: Done for current stage**
 * MongoDB connection is working
-* User model is live with unique username and email
+* User model is live with unique username and email, roles, and daily usage fields
 * AiProviderDaily model tracks provider requests, tokens, exhausted state, and last activity
-* Resume, JobInput, and Analysis models are live
-* Recommendation and export models are still pending
+* Resume model stores R2 key, extraction status, structured content, and optional structuredDraft
+* JobInput and Analysis models are live with evidence fields and cache friendly indexes
+* RecommendationSet model stores up to six items with accept or reject decisions per analysis
+* Export model still pending until the export batch
 
 ## Slice 3: Authentication
 
@@ -30,7 +32,7 @@ Implement Auth.js with email, username, and password registration. Login with us
 * Register with username, email, and password
 * Login with username and password
 * Usernames are case insensitive and passwords are case sensitive
-* Admin seed from env
+* Admin seed from env (default breezy / breezy for local)
 * Dashboard and admin routes are protected
 
 ## Slice 4: Welcome page and product messaging
@@ -42,6 +44,7 @@ Build the public welcome page that explains RezIQ, privacy basics, DOCX only upl
 * Auth modal with one dynamic login or register form
 * Hover styles on CTAs
 * Footer with dynamic year and Eric Capiz link
+* App shell matches the welcome dark aesthetic after login
 
 ## Slice 5: Usage assignment and access gating
 
@@ -52,7 +55,8 @@ Add per user daily allowances. New users start at 0 and see a message that an ad
 * Daily reset uses America/Denver
 * New users start at 0 and see waiting or empty allowance messaging
 * Dashboard shows used, left, and daily allowance
-* consumeSuccessfulAnalysis helper is ready for the analysis engine
+* consumeSuccessfulAnalysis deducts one use only after a successful fit analysis
+* Recommendations do not consume a second use
 * Upload and job paste are blocked when remaining uses are 0
 
 ## Slice 6: Admin dashboard basics
@@ -67,7 +71,7 @@ Admin can list registered users, see assigned and remaining uses, and grant or a
 * Provider lamps: green active, purple available idle, red exhausted
 * Stats refresh endpoint is live
 * Caps match console free tiers (Groq tokens/day, Cerebras tokens/day, Gemini requests/day)
-* Estimates will get sharper after real AI analyses run and log tokens
+* Estimates get sharper as real AI runs log tokens
 
 ## Slice 7: Object storage for resumes
 
@@ -83,10 +87,10 @@ Set up cloud object storage for uploaded DOCX files. Store only storage keys and
 Let logged in users with uses available upload a DOCX resume. Reject non DOCX files. Show guidance about ATS friendly formatting and that export will be a clean new document, not a visual clone of the original.
 
 **Status: Done**
-* Dashboard continuous flow step 1 uploads DOCX only
+* Dashboard continuous flow step 01 Upload accepts DOCX only
 * Upload blocked with clear messaging when out of uses today
 * Non DOCX files rejected
-* Delete resume removes Mongo record, linked jobs, and R2 object
+* Delete resume removes Mongo record, linked jobs, analyses side effects as wired, and R2 object
 
 ## Slice 9: Resume text extraction and structuring
 
@@ -96,23 +100,25 @@ Extract text from the uploaded DOCX and normalize it into structured resume data
 * mammoth extracts raw DOCX text
 * Heuristic structuring fills contact, summary, experience, education, and skills
 * Structured preview shown on the dashboard after upload
-* AI based structuring polish can improve this in later AI slices
+* AI based structuring polish can improve this in later polish work
 
 ## Slice 10: Job description input
 
 Let users paste a job description (no URL import). Save the raw text and run structured extraction for title, company, required skills, preferred skills, education, certifications, experience, responsibilities, keywords, and ATS phrases.
 
-**Status: Done for current stage**
-* Dashboard continuous flow step 2 pastes job text (no URL import)
+**Status: Done**
+* Dashboard continuous flow step 02 Job pastes job text (no URL import)
 * JobInput saved against the uploaded resume
 * Heuristic structuring fills title, company, skills, keywords, and responsibilities
-* Analyze step placeholder waits for the AI batch
+* Changing job text clears prior analysis and recommendations until saved again
+* Flow advances only when the user clicks Next or Continue
 
 ## Slice 11: AI service abstraction
 
 Build the AIService interface with provider adapters, sticky provider per analysis session, structured JSON validation, retry or repair once, usage logging, and clear failure when providers are unavailable.
 
 **Status: Done**
+* Shared runJsonWithProviders path used by fit analysis and recommendations
 * Provider order is Groq, then Cerebras, then Gemini Flash Lite
 * JSON validation with one repair retry on the same provider
 * Failures and token usage log into AiProviderDaily
@@ -123,7 +129,7 @@ Build the AIService interface with provider adapters, sticky provider per analys
 Implement Groq as the primary provider using llama 3.3 70b versatile. Log requests and token usage into AiProviderDaily.
 
 **Status: Done**
-* Groq adapter uses llama 3.3 70b versatile
+* Groq adapter uses llama-3.3-70b-versatile
 * Requests and tokens are logged
 
 ## Slice 13: Gemini fallback provider
@@ -131,9 +137,9 @@ Implement Groq as the primary provider using llama 3.3 70b versatile. Log reques
 Implement Google AI Studio Gemini Flash as fallback when Groq fails or hits limits. Keep the same provider for the rest of that analysis session after switch. Disclose provider use in privacy copy as needed.
 
 **Status: Done for current stage**
-* Cerebras gpt oss 120b is backup #2
-* Gemini 2.5 Flash Lite is last resort
-* Sticky behavior is per analysis attempt with repair on the same provider
+* Cerebras gpt-oss-120b is backup #2
+* Gemini gemini-2.5-flash-lite is last resort
+* Sticky behavior is per AI attempt with repair on the same provider
 * Privacy disclosure copy can expand later
 
 ## Slice 14: Fit analysis engine
@@ -141,39 +147,68 @@ Implement Google AI Studio Gemini Flash as fallback when Groq fails or hits limi
 Compare structured resume vs structured job data. Produce Strong fit, Possible fit, or Poor fit with evidence for matches, partial matches, and gaps. No public percentage scores. Cache results for the same inputs. Consume a user use only after a successful analysis.
 
 **Status: Done**
-* Analyze step runs fit analysis and shows verdict with evidence
+* Dashboard continuous flow step 03 Analyze runs fit analysis and shows verdict with evidence
 * Results cache per user resume job combo
-* Fresh reruns consume another use
-* Cached loads do not consume another use
-* Spinner copy only while analyzing
+* Fresh reruns consume another use; cached loads do not
+* Spinner copy only while analyzing (no provider names)
+* Continue to improve is user initiated (no auto advance after analysis)
 
 ## Slice 15: Recommendation workflow
 
 For Strong or Possible fit only, generate improvement recommendations that never invent experience. Each recommendation supports accept or reject. Poor fit shows gaps and guidance only, with no rewrite suggestions.
 
+**Status: Done**
+* Dashboard continuous flow step 04 Improve
+* User clicks Get recommendations (no second daily credit)
+* AI returns 0 to 6 suggestions with statusNote, alreadyStrong, and optional diyAdvice
+* Cached RecommendationSet per analysis
+* Strong or Possible only; Poor fit shows a clear no rewrite message
+* Accept, Reject, and Clear per item via decision API
+* Prompt rules forbid inventing jobs, skills, metrics, or achievements
+
 ## Slice 16: Apply approved changes
 
 Update the structured resume model using only accepted recommendations. Keep rejected items ignored. Require review before export.
+
+**Status: Done for current stage**
+* Apply accepted changes writes Resume.structuredDraft via path based updates (summary, skills, experience bullets or fields, education fields)
+* Rejected and pending items are ignored
+* Draft preview shows on step 04 after apply (summary, skills snippet, experience count)
+* Original structured resume stays intact for export fallback later
+* DOCX or PDF export of the draft is deferred to slice 17
 
 ## Slice 17: Resume export generation
 
 Generate a new ATS friendly resume from the updated structured content. Allow download as DOCX or PDF. Do not surgically edit the original upload.
 
+**Status: Not started**
+* Planned source is structuredDraft when present, otherwise structured
+* New clean template export only (no in place DOCX surgery)
+
 ## Slice 18: User analysis history
 
 Let users view their past uploads, job inputs, fit verdicts, recommendation decisions, and exports. Support deleting a resume or analysis and its stored files.
+
+**Status: Not started**
 
 ## Slice 19: Privacy and deletion hardening
 
 Add privacy page copy, provider disclosure, delete account or delete data flows as appropriate, and logging rules that avoid storing full resume text in normal logs.
 
+**Status: Not started**
+
 ## Slice 20: Usage metering refinement
 
 Using real analysis logs, refine estimated daily capacity, admin remaining uses display, and reset timers for Groq and Gemini. Tune admin defaults for assigning uses.
 
+**Status: Not started**
+* Admin capacity panel already exists; this slice is for tuning from production like logs
+
 ## Slice 21: End to end polish
 
 Improve loading states, error messages (including both AI providers exhausted), mobile layout, empty states, and the full path from welcome to download. Final MVP pass before any v2 work.
+
+**Status: Not started**
 
 ## Out of scope for these MVP slices (later)
 

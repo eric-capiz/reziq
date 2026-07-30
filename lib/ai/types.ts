@@ -19,6 +19,25 @@ export const fitAnalysisSchema = z.object({
 
 export type FitAnalysisResult = z.infer<typeof fitAnalysisSchema>;
 
+export const recommendationItemSchema = z.object({
+  section: z.enum(["summary", "experience", "skills", "education", "other"]),
+  targetPath: z.string().min(1),
+  title: z.string().min(1),
+  rationale: z.string().min(1),
+  currentText: z.string().default(""),
+  proposedText: z.string().min(1),
+  resumeEvidence: z.string().min(1),
+});
+
+export const recommendationResultSchema = z.object({
+  alreadyStrong: z.boolean().default(false),
+  statusNote: z.string().default(""),
+  diyAdvice: z.string().default(""),
+  recommendations: z.array(recommendationItemSchema).max(6).default([]),
+});
+
+export type RecommendationResult = z.infer<typeof recommendationResultSchema>;
+
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;

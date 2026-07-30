@@ -85,6 +85,10 @@ const ResumeSchema = new Schema(
       type: StructuredResumeSchema,
       default: () => ({}),
     },
+    structuredDraft: {
+      type: StructuredResumeSchema,
+      required: false,
+    },
     status: {
       type: String,
       enum: ["uploaded", "extracted", "error"],

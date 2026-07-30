@@ -74,6 +74,28 @@ type AnalysisState = {
   cached: boolean;
 };
 
+type RecommendationItem = {
+  itemId: string;
+  section: string;
+  targetPath: string;
+  title: string;
+  rationale: string;
+  currentText: string;
+  proposedText: string;
+  resumeEvidence: string;
+  decision: "pending" | "accepted" | "rejected";
+};
+
+type RecommendationSetState = {
+  id: string;
+  analysisId: string;
+  alreadyStrong: boolean;
+  statusNote: string;
+  diyAdvice: string;
+  items: RecommendationItem[];
+  appliedAt: string | null;
+};
+
 const verdictStyles = {
   strong: {
     label: "Strong fit",
@@ -120,6 +142,16 @@ const STEP_META = [
       "hover:-translate-y-0.5 hover:border-[#7CFFB2]/35 hover:bg-[#7CFFB2]/10 hover:shadow-[0_0_18px_rgba(124,255,178,0.16)]",
     dot: "bg-[#7CFFB2] shadow-[0_0_14px_rgba(124,255,178,0.4)]",
   },
+  {
+    n: "04",
+    label: "Improve",
+    accent: "text-[#FF5C35]",
+    active:
+      "border-[#FF5C35]/45 bg-[#FF5C35]/12 text-white shadow-[0_0_24px_rgba(255,92,53,0.22)]",
+    hover:
+      "hover:-translate-y-0.5 hover:border-[#FF5C35]/35 hover:bg-[#FF5C35]/10 hover:shadow-[0_0_18px_rgba(255,92,53,0.16)]",
+    dot: "bg-[#FF5C35] shadow-[0_0_14px_rgba(255,92,53,0.45)]",
+  },
 ] as const;
 
 export function AnalysisFlow({
@@ -139,6 +171,12 @@ export function AnalysisFlow({
   const [job, setJob] = useState<JobState | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [recommendationSet, setRecommendationSet] =
+    useState<RecommendationSetState | null>(null);
+  const [loadingRecs, setLoadingRecs] = useState(false);
+  const [structuredDraft, setStructuredDraft] = useState<StructuredResume | null>(
+    null
+  );
   const [usesLeft, setUsesLeft] = useState(remainingUses);
 
   const outOfUsesMessage = useMemo(() => {
@@ -149,19 +187,21 @@ export function AnalysisFlow({
     return "Out of uses today. Try again tomorrow after the daily reset.";
   }, [canUpload, dailyAllowance]);
 
-  const maxStep = job ? 2 : resume ? 1 : 0;
+  const maxStep = analysis ? 3 : job ? 2 : resume ? 1 : 0;
 
   useEffect(() => {
     if (step > maxStep) setStep(maxStep);
   }, [step, maxStep]);
 
   function goTo(next: number) {
-    const clamped = Math.max(0, Math.min(2, next));
+    const clamped = Math.max(0, Math.min(3, next));
     if (clamped > maxStep) {
       toast.message(
         clamped === 1
           ? "Finish uploading your resume first"
-          : "Save a job description first"
+          : clamped === 2
+            ? "Save a job description first"
+            : "Run a fit analysis first"
       );
       return;
     }
@@ -174,6 +214,8 @@ export function AnalysisFlow({
     setJob(null);
     setJobText("");
     setAnalysis(null);
+    setRecommendationSet(null);
+    setStructuredDraft(null);
     setStep(0);
   }
 
@@ -206,6 +248,8 @@ export function AnalysisFlow({
       });
       setJob(null);
       setAnalysis(null);
+      setRecommendationSet(null);
+      setStructuredDraft(null);
       toast.success("Resume uploaded and structured");
       setStep(1);
     });
@@ -238,6 +282,8 @@ export function AnalysisFlow({
       }
       setJob({ id: data.id, structured: data.structured });
       setAnalysis(null);
+      setRecommendationSet(null);
+      setStructuredDraft(null);
       toast.success("Job description saved and structured");
       setStep(2);
     });
@@ -257,6 +303,8 @@ export function AnalysisFlow({
       setJobText("");
       setFile(null);
       setAnalysis(null);
+      setRecommendationSet(null);
+      setStructuredDraft(null);
       setStep(0);
       toast.success("Resume deleted");
     });
@@ -299,6 +347,10 @@ export function AnalysisFlow({
           guidance: data.analysis.guidance ?? "",
           cached: Boolean(data.cached),
         });
+        if (force) {
+          setRecommendationSet(null);
+          setStructuredDraft(null);
+        }
         if (typeof data.remainingUses === "number") {
           setUsesLeft(data.remainingUses);
         }
@@ -308,6 +360,92 @@ export function AnalysisFlow({
       } finally {
         setAnalyzing(false);
       }
+    });
+  }
+
+  async function loadRecommendations() {
+    if (!analysis?.id) return;
+    if (analysis.verdict === "poor") {
+      toast.message("Poor fit results do not include rewrite recommendations");
+      return;
+    }
+
+    setLoadingRecs(true);
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/analyses/${analysis.id}/recommendations`, {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error ?? "Could not get recommendations");
+          return;
+        }
+        setRecommendationSet({
+          id: data.set.id,
+          analysisId: data.set.analysisId,
+          alreadyStrong: data.set.alreadyStrong,
+          statusNote: data.set.statusNote,
+          diyAdvice: data.set.diyAdvice,
+          items: data.set.items ?? [],
+          appliedAt: data.set.appliedAt,
+        });
+        toast.success(
+          data.cached ? "Loaded saved recommendations" : "Recommendations ready"
+        );
+      } finally {
+        setLoadingRecs(false);
+      }
+    });
+  }
+
+  async function setDecision(
+    itemId: string,
+    decision: "pending" | "accepted" | "rejected"
+  ) {
+    if (!analysis?.id) return;
+    startTransition(async () => {
+      const res = await fetch(
+        `/api/analyses/${analysis.id}/recommendations/decision`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemId, decision }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not update decision");
+        return;
+      }
+      setRecommendationSet((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: (data.items as RecommendationItem[]) ?? prev.items,
+            }
+          : prev
+      );
+    });
+  }
+
+  async function applyAccepted() {
+    if (!analysis?.id) return;
+    startTransition(async () => {
+      const res = await fetch(
+        `/api/analyses/${analysis.id}/recommendations/apply`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not apply changes");
+        return;
+      }
+      setStructuredDraft(data.structuredDraft);
+      setRecommendationSet((prev) =>
+        prev ? { ...prev, appliedAt: data.appliedAt } : prev
+      );
+      toast.success("Accepted changes applied to your resume draft");
     });
   }
 
@@ -547,6 +685,8 @@ export function AnalysisFlow({
                     setJobText(e.target.value);
                     setJob(null);
                     setAnalysis(null);
+                    setRecommendationSet(null);
+                    setStructuredDraft(null);
                   }}
                 />
 
@@ -701,14 +841,23 @@ export function AnalysisFlow({
                   </div>
                 ) : null}
 
-                <Button
-                  type="button"
-                  className="rounded-full bg-[#7CFFB2] px-5 text-[#0B0F14] hover:bg-white"
-                  disabled={pending || analyzing || usesLeft <= 0}
-                  onClick={() => runAnalysis(true)}
-                >
-                  Run analysis again
-                </Button>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    type="button"
+                    className="rounded-full bg-[#7CFFB2] px-5 text-[#0B0F14] hover:bg-white"
+                    disabled={pending || analyzing || usesLeft <= 0}
+                    onClick={() => runAnalysis(true)}
+                  >
+                    Run analysis again
+                  </Button>
+                  <Button
+                    type="button"
+                    className="rounded-full border border-white/20 bg-white/5 px-5 text-white hover:bg-white hover:text-[#0B0F14]"
+                    onClick={() => goTo(3)}
+                  >
+                    Continue to improve
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="mt-8 rounded-3xl border border-[#7CFFB2]/25 bg-[#0B0F14]/50 p-5">
@@ -723,6 +872,199 @@ export function AnalysisFlow({
                 >
                   Analyze fit
                 </Button>
+              </div>
+            )}
+          </section>
+
+          <section className="min-w-full bg-[#1A1010] p-5 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.2em] text-[#FF5C35] uppercase">
+                  Improve
+                </p>
+                <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
+                  Recommend changes
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
+                  For Strong or Possible fits only. Suggestions never invent
+                  experience. Accept or reject each one, then apply.
+                </p>
+              </div>
+              <span className="font-[family-name:var(--font-editorial)] text-5xl italic text-[#FF5C35] sm:text-6xl">
+                04
+              </span>
+            </div>
+
+            {!analysis ? (
+              <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/60">
+                Run a fit analysis first, then this step unlocks.
+              </div>
+            ) : analysis.verdict === "poor" ? (
+              <div className="mt-8 rounded-3xl border border-[#FF5C35]/30 bg-[#0B0F14]/50 p-5 text-sm text-white/70">
+                <p className="font-[family-name:var(--font-editorial)] text-xl italic text-[#FF5C35]">
+                  No rewrite suggestions for Poor fit
+                </p>
+                <p className="mt-2">
+                  Review the gaps and guidance from the Analyze step. RezIQ will not
+                  invent experience to force a closer match.
+                </p>
+              </div>
+            ) : loadingRecs ? (
+              <div className="mt-8 rounded-3xl border border-[#FF5C35]/25 bg-[#0B0F14]/50 p-6">
+                <div className="flex items-center gap-3">
+                  <span className="size-3 animate-pulse rounded-full bg-[#FF5C35]" />
+                  <p className="font-[family-name:var(--font-editorial)] text-xl italic text-white">
+                    Finding honest improvements...
+                  </p>
+                </div>
+                <p className="mt-3 text-sm text-white/60">
+                  Looking for wording changes supported by your existing experience.
+                </p>
+              </div>
+            ) : !recommendationSet ? (
+              <div className="mt-8 rounded-3xl border border-[#FF5C35]/25 bg-[#0B0F14]/50 p-5">
+                <p className="text-sm text-white/70">
+                  Ready when you are. This does not use another daily credit.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-5 rounded-full bg-[#FF5C35] px-5 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ff7a57] hover:shadow-[0_12px_30px_rgba(255,92,53,0.35)]"
+                  disabled={pending || loadingRecs}
+                  onClick={loadRecommendations}
+                >
+                  Get recommendations
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-8 space-y-4">
+                {(recommendationSet.statusNote ||
+                  recommendationSet.alreadyStrong ||
+                  recommendationSet.items.length === 0) && (
+                  <div className="rounded-3xl border border-[#7CFFB2]/25 bg-[#0F1A16] p-5">
+                    <p className="text-xs font-semibold tracking-[0.16em] text-[#7CFFB2] uppercase">
+                      {recommendationSet.alreadyStrong ||
+                      recommendationSet.items.length === 0
+                        ? "Looking solid"
+                        : "Notes"}
+                    </p>
+                    <p className="mt-2 text-sm text-white/75">
+                      {recommendationSet.statusNote ||
+                        "Your resume already looks strong for this role. No forced rewrites."}
+                    </p>
+                    {recommendationSet.diyAdvice ? (
+                      <p className="mt-3 text-sm text-white/60">
+                        Optional DIY: {recommendationSet.diyAdvice}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+
+                {recommendationSet.items.map((item) => (
+                  <article
+                    key={item.itemId}
+                    className="rounded-3xl border border-white/10 bg-[#0B0F14]/60 p-5"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs tracking-[0.14em] text-white/40 uppercase">
+                          {item.section}
+                        </p>
+                        <h3 className="mt-1 text-lg font-medium text-white">
+                          {item.title}
+                        </h3>
+                      </div>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[0.7rem] text-white/60 uppercase">
+                        {item.decision}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-white/65">{item.rationale}</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                        <p className="text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                          Current
+                        </p>
+                        <p className="mt-2 text-sm text-white/70">
+                          {item.currentText || "Empty"}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-[#FF5C35]/25 bg-[#FF5C35]/10 p-3">
+                        <p className="text-[0.65rem] tracking-[0.14em] text-[#FF5C35] uppercase">
+                          Proposed
+                        </p>
+                        <p className="mt-2 text-sm text-white/85">{item.proposedText}</p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-white/45">
+                      Evidence: {item.resumeEvidence}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-full bg-[#7CFFB2] text-[#0B0F14] hover:bg-white"
+                        disabled={pending}
+                        onClick={() => setDecision(item.itemId, "accepted")}
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="rounded-full border border-white/20 bg-white/5 text-white hover:bg-white/10"
+                        disabled={pending}
+                        onClick={() => setDecision(item.itemId, "rejected")}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-full text-white/60 hover:bg-white/10 hover:text-white"
+                        disabled={pending}
+                        onClick={() => setDecision(item.itemId, "pending")}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+
+                {recommendationSet.items.some((item) => item.decision === "accepted") ? (
+                  <Button
+                    type="button"
+                    className="rounded-full bg-white px-5 text-[#0B0F14] hover:bg-[#7CFFB2]"
+                    disabled={pending}
+                    onClick={applyAccepted}
+                  >
+                    Apply accepted changes
+                  </Button>
+                ) : null}
+
+                {structuredDraft ? (
+                  <div className="rounded-3xl border border-[#00C2FF]/25 bg-[#0D1820] p-5 text-sm text-white/75">
+                    <p className="text-xs font-semibold tracking-[0.16em] text-[#00C2FF] uppercase">
+                      Updated draft preview
+                    </p>
+                    <p className="mt-3">
+                      <span className="text-white">Summary:</span>{" "}
+                      {structuredDraft.summary || "Not set"}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-white">Skills:</span>{" "}
+                      {structuredDraft.skills?.length
+                        ? structuredDraft.skills.slice(0, 12).join(", ")
+                        : "Not set"}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-white">Experience roles:</span>{" "}
+                      {structuredDraft.experience?.length ?? 0}
+                    </p>
+                    <p className="mt-3 text-xs text-white/45">
+                      Export of this draft comes in the next batch.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             )}
           </section>

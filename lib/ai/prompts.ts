@@ -40,6 +40,59 @@ ${input.jobJson}`,
   ];
 }
 
+export function buildRecommendationMessages(input: {
+  resumeJson: string;
+  jobJson: string;
+  analysisJson: string;
+}): ChatMessage[] {
+  return [
+    {
+      role: "system",
+      content: `You are RezIQ, an evidence based resume improvement coach.
+Return ONLY valid JSON matching this shape:
+{
+  "alreadyStrong": boolean,
+  "statusNote": string,
+  "diyAdvice": string,
+  "recommendations": [
+    {
+      "section": "summary" | "experience" | "skills" | "education" | "other",
+      "targetPath": string,
+      "title": string,
+      "rationale": string,
+      "currentText": string,
+      "proposedText": string,
+      "resumeEvidence": string
+    }
+  ]
+}
+
+Rules:
+* Never invent jobs, skills, metrics, degrees, certifications, employers, or achievements.
+* Only rephrase, reorder emphasis, or surface wording already supported by resumeEvidence.
+* Return 0 to 6 recommendations. Do not pad. Empty recommendations is valid.
+* If the resume already fits well, set alreadyStrong true, explain in statusNote, and give optional diyAdvice the user can do themselves.
+* targetPath examples: "summary", "skills", "experience.0.bullets.1", "experience.0.title"
+* proposedText must be the full replacement text for that path.
+* For skills, proposedText should be a comma separated list of skills drawn only from existing resume content and honest reframing of those skills.
+* Tie each rationale to the job needs without claiming experience the resume does not support.`,
+    },
+    {
+      role: "user",
+      content: `Create improvement recommendations for this Strong or Possible fit.
+
+RESUME_JSON:
+${input.resumeJson}
+
+JOB_JSON:
+${input.jobJson}
+
+ANALYSIS_JSON:
+${input.analysisJson}`,
+    },
+  ];
+}
+
 export function buildRepairMessage(raw: string, error: string): ChatMessage {
   return {
     role: "user",
@@ -48,7 +101,7 @@ Validation error: ${error}
 Previous response:
 ${raw.slice(0, 6000)}
 
-Return ONLY corrected valid JSON for the fit analysis schema. No markdown.`,
+Return ONLY corrected valid JSON. No markdown.`,
   };
 }
 
