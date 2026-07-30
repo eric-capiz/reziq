@@ -449,6 +449,38 @@ export function AnalysisFlow({
     });
   }
 
+  async function downloadExport(format: "docx" | "pdf") {
+    if (!resume?.id) return;
+    startTransition(async () => {
+      const params = new URLSearchParams({ format });
+      if (analysis?.id) params.set("analysisId", analysis.id);
+      const res = await fetch(`/api/resumes/${resume.id}/export?${params}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(
+          (data as { error?: string }).error ?? "Could not export resume"
+        );
+        return;
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] ?? `resume-reziq.${format}`;
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`${format.toUpperCase()} ready`);
+    });
+  }
+
+  const exportResume: StructuredResume | null =
+    structuredDraft ?? resume?.structured ?? null;
+
   return (
     <div className="space-y-5">
       {!canUpload && (
@@ -1040,33 +1072,152 @@ export function AnalysisFlow({
                     Apply accepted changes
                   </Button>
                 ) : null}
-
-                {structuredDraft ? (
-                  <div className="rounded-3xl border border-[#00C2FF]/25 bg-[#0D1820] p-5 text-sm text-white/75">
-                    <p className="text-xs font-semibold tracking-[0.16em] text-[#00C2FF] uppercase">
-                      Updated draft preview
-                    </p>
-                    <p className="mt-3">
-                      <span className="text-white">Summary:</span>{" "}
-                      {structuredDraft.summary || "Not set"}
-                    </p>
-                    <p className="mt-2">
-                      <span className="text-white">Skills:</span>{" "}
-                      {structuredDraft.skills?.length
-                        ? structuredDraft.skills.slice(0, 12).join(", ")
-                        : "Not set"}
-                    </p>
-                    <p className="mt-2">
-                      <span className="text-white">Experience roles:</span>{" "}
-                      {structuredDraft.experience?.length ?? 0}
-                    </p>
-                    <p className="mt-3 text-xs text-white/45">
-                      Export of this draft comes in the next batch.
-                    </p>
-                  </div>
-                ) : null}
               </div>
             )}
+
+            {analysis && exportResume ? (
+              <div className="mt-8 space-y-4">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.16em] text-[#00C2FF] uppercase">
+                      Export preview
+                    </p>
+                    <p className="mt-1 text-sm text-white/55">
+                      Clean ATS layout. Not a visual clone of your upload.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      className="rounded-full bg-white px-5 text-[#0B0F14] hover:bg-[#7CFFB2]"
+                      disabled={pending}
+                      onClick={() => downloadExport("docx")}
+                    >
+                      Download DOCX
+                    </Button>
+                    <Button
+                      type="button"
+                      className="rounded-full border border-white/20 bg-white/5 px-5 text-white hover:bg-white hover:text-[#0B0F14]"
+                      disabled={pending}
+                      onClick={() => downloadExport("pdf")}
+                    >
+                      Download PDF
+                    </Button>
+                  </div>
+                </div>
+
+                <article className="rounded-3xl border border-white/10 bg-[#F7F5F1] p-6 text-[#1A1A1A] shadow-[0_20px_50px_rgba(0,0,0,0.35)] sm:p-8">
+                  <header className="border-b border-[#1A1A1A]/15 pb-4 text-center">
+                    <h3 className="font-[family-name:var(--font-editorial)] text-3xl tracking-tight">
+                      {exportResume.contact?.name || "Resume"}
+                    </h3>
+                    <p className="mt-2 text-sm text-[#444]">
+                      {[
+                        exportResume.contact?.email,
+                        exportResume.contact?.phone,
+                        ...(exportResume.contact?.links ?? []),
+                      ]
+                        .filter(Boolean)
+                        .join("  ·  ")}
+                    </p>
+                  </header>
+
+                  {exportResume.summary?.trim() ? (
+                    <section className="mt-5">
+                      <h4 className="border-b border-[#1A1A1A]/20 pb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+                        Summary
+                      </h4>
+                      <p className="mt-2 text-sm leading-relaxed text-[#333]">
+                        {exportResume.summary}
+                      </p>
+                    </section>
+                  ) : null}
+
+                  {exportResume.skills?.length ? (
+                    <section className="mt-5">
+                      <h4 className="border-b border-[#1A1A1A]/20 pb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+                        Skills
+                      </h4>
+                      <p className="mt-2 text-sm leading-relaxed text-[#333]">
+                        {exportResume.skills.join(", ")}
+                      </p>
+                    </section>
+                  ) : null}
+
+                  {exportResume.experience?.length ? (
+                    <section className="mt-5">
+                      <h4 className="border-b border-[#1A1A1A]/20 pb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+                        Experience
+                      </h4>
+                      <div className="mt-3 space-y-4">
+                        {exportResume.experience.map((job, index) => (
+                          <div key={`exp-${index}`}>
+                            <p className="text-sm font-semibold">
+                              {[job.title, job.company]
+                                .filter(Boolean)
+                                .join("  |  ")}
+                            </p>
+                            <p className="text-xs text-[#666]">
+                              {[job.location, job.dates]
+                                .filter(Boolean)
+                                .join("  |  ")}
+                            </p>
+                            {job.bullets?.length ? (
+                              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[#333]">
+                                {job.bullets
+                                  .filter((b) => b.trim())
+                                  .map((bullet, bIndex) => (
+                                    <li key={`b-${index}-${bIndex}`}>{bullet}</li>
+                                  ))}
+                              </ul>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {exportResume.education?.length ? (
+                    <section className="mt-5">
+                      <h4 className="border-b border-[#1A1A1A]/20 pb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+                        Education
+                      </h4>
+                      <div className="mt-3 space-y-3">
+                        {exportResume.education.map((edu, index) => (
+                          <div key={`edu-${index}`}>
+                            <p className="text-sm font-semibold">
+                              {[edu.degree, edu.school]
+                                .filter(Boolean)
+                                .join("  |  ")}
+                            </p>
+                            <p className="text-xs text-[#666]">
+                              {[edu.year, edu.details]
+                                .filter(Boolean)
+                                .join("  |  ")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {exportResume.otherSections
+                    ?.filter((s) => s.title?.trim() || s.content?.trim())
+                    .map((other, index) => (
+                      <section key={`other-${index}`} className="mt-5">
+                        <h4 className="border-b border-[#1A1A1A]/20 pb-1 text-xs font-semibold tracking-[0.16em] uppercase">
+                          {other.title?.trim() || "Additional"}
+                        </h4>
+                        {other.content?.trim() ? (
+                          <p className="mt-2 text-sm leading-relaxed text-[#333]">
+                            {other.content}
+                          </p>
+                        ) : null}
+                      </section>
+                    ))}
+                </article>
+              </div>
+            ) : null}
           </section>
         </div>
       </div>

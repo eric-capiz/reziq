@@ -22,7 +22,8 @@ Connect MongoDB and define collections or schemas for users, resumes, job inputs
 * Resume model stores R2 key, extraction status, structured content, and optional structuredDraft
 * JobInput and Analysis models are live with evidence fields and cache friendly indexes
 * RecommendationSet model stores up to six items with accept or reject decisions per analysis
-* Export model still pending until the export batch
+* ExportRecord model stores format, source, R2 key, and filename per generated download
+* Admin seed syncs username, email, role, and password from ADMIN_* env on each process start
 
 ## Slice 3: Authentication
 
@@ -32,7 +33,9 @@ Implement Auth.js with email, username, and password registration. Login with us
 * Register with username, email, and password
 * Login with username and password
 * Usernames are case insensitive and passwords are case sensitive
+* Show password toggle on the auth modal password field
 * Admin seed from env (default breezy / breezy for local)
+* Deployed hosts must set ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD, and MONGODB_URI or admin login will fail
 * Dashboard and admin routes are protected
 
 ## Slice 4: Welcome page and product messaging
@@ -175,15 +178,18 @@ Update the structured resume model using only accepted recommendations. Keep rej
 * Rejected and pending items are ignored
 * Draft preview shows on step 04 after apply (summary, skills snippet, experience count)
 * Original structured resume stays intact for export fallback later
-* DOCX or PDF export of the draft is deferred to slice 17
+* DOCX and PDF export of the draft is available on step 04 after analysis
 
 ## Slice 17: Resume export generation
 
 Generate a new ATS friendly resume from the updated structured content. Allow download as DOCX or PDF. Do not surgically edit the original upload.
 
-**Status: Not started**
-* Planned source is structuredDraft when present, otherwise structured
-* New clean template export only (no in place DOCX surgery)
+**Status: Done**
+* Uses structuredDraft when present, otherwise structured
+* Clean single column ATS template for both DOCX and PDF
+* Step 04 shows an HTML export preview plus Download DOCX and Download PDF (no auto download)
+* GET /api/resumes/[id]/export?format=docx|pdf generates, stores in R2, records ExportRecord, and returns the file
+* Preview wording matches export content; layout may differ slightly by format
 
 ## Slice 18: User analysis history
 
