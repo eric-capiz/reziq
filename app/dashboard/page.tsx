@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { getUserUsageSummary } from "@/lib/usage";
-import { Button } from "@/components/ui/button";
 import { AnalysisFlow } from "@/components/dashboard/analysis-flow";
 import { PulseStack } from "@/components/dashboard/pulse-stack";
 import { AppShell } from "@/components/layout/app-shell";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 export default async function DashboardPage({
   searchParams,
@@ -39,21 +39,7 @@ export default async function DashboardPage({
               Admin
             </Link>
           )}
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
-          >
-            <Button
-              type="submit"
-              variant="ghost"
-              size="sm"
-              className="rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:text-white"
-            >
-              Log out
-            </Button>
-          </form>
+          <LogoutButton />
         </>
       }
     >
