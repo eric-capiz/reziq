@@ -143,6 +143,8 @@ Discussion of potential technical risks and alternative approaches. As each item
   * username
 * Login uses **username + password**.
 * Email and username must both be unique.
+* Usernames are stored and compared case insensitive (for example Breezy and breezy are the same user).
+* Passwords are case sensitive. Login/register UI should note that passwords are case sensitive.
 * Store password hashes only (never plain text). Use a proven hash scheme such as bcrypt or Argon2.
 * User roles in Mongo: `admin` and `user`. The operator account is admin.
 * Anyone may register. New non admin users start with 0 assigned uses.
