@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 type StructuredResume = {
   contact: {
@@ -57,17 +56,38 @@ type JobState = {
   structured: StructuredJob;
 };
 
-function StepMark({ n, active }: { n: string; active: boolean }) {
-  return (
-    <span
-      className={`font-[family-name:var(--font-editorial)] text-5xl italic leading-none tracking-tight sm:text-6xl ${
-        active ? "text-[#FF5C35]" : "text-white/15"
-      }`}
-    >
-      {n}
-    </span>
-  );
-}
+const STEP_META = [
+  {
+    n: "01",
+    label: "Upload",
+    accent: "text-[#00C2FF]",
+    active:
+      "border-[#00C2FF]/45 bg-[#00C2FF]/12 text-white shadow-[0_0_24px_rgba(0,194,255,0.22)]",
+    hover:
+      "hover:-translate-y-0.5 hover:border-[#00C2FF]/35 hover:bg-[#00C2FF]/10 hover:shadow-[0_0_18px_rgba(0,194,255,0.16)]",
+    dot: "bg-[#00C2FF] shadow-[0_0_14px_rgba(0,194,255,0.45)]",
+  },
+  {
+    n: "02",
+    label: "Job",
+    accent: "text-[#FF5C35]",
+    active:
+      "border-[#FF5C35]/45 bg-[#FF5C35]/12 text-white shadow-[0_0_24px_rgba(255,92,53,0.22)]",
+    hover:
+      "hover:-translate-y-0.5 hover:border-[#FF5C35]/35 hover:bg-[#FF5C35]/10 hover:shadow-[0_0_18px_rgba(255,92,53,0.16)]",
+    dot: "bg-[#FF5C35] shadow-[0_0_14px_rgba(255,92,53,0.45)]",
+  },
+  {
+    n: "03",
+    label: "Analyze",
+    accent: "text-[#7CFFB2]",
+    active:
+      "border-[#7CFFB2]/45 bg-[#7CFFB2]/12 text-white shadow-[0_0_24px_rgba(124,255,178,0.2)]",
+    hover:
+      "hover:-translate-y-0.5 hover:border-[#7CFFB2]/35 hover:bg-[#7CFFB2]/10 hover:shadow-[0_0_18px_rgba(124,255,178,0.16)]",
+    dot: "bg-[#7CFFB2] shadow-[0_0_14px_rgba(124,255,178,0.4)]",
+  },
+] as const;
 
 export function AnalysisFlow({
   canUpload,
@@ -79,6 +99,7 @@ export function AnalysisFlow({
   remainingUses: number;
 }) {
   const [pending, startTransition] = useTransition();
+  const [step, setStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [resume, setResume] = useState<ResumeState | null>(null);
   const [jobText, setJobText] = useState("");
@@ -92,15 +113,31 @@ export function AnalysisFlow({
     return "Out of uses today. Try again tomorrow after the daily reset.";
   }, [canUpload, dailyAllowance]);
 
-  const step1Active = !resume;
-  const step2Active = Boolean(resume) && !job;
-  const step3Active = Boolean(resume && job);
+  const maxStep = job ? 2 : resume ? 1 : 0;
+
+  useEffect(() => {
+    if (step > maxStep) setStep(maxStep);
+  }, [step, maxStep]);
+
+  function goTo(next: number) {
+    const clamped = Math.max(0, Math.min(2, next));
+    if (clamped > maxStep) {
+      toast.message(
+        clamped === 1
+          ? "Finish uploading your resume first"
+          : "Save a job description first"
+      );
+      return;
+    }
+    setStep(clamped);
+  }
 
   function onFileChange(next: File | null) {
     setFile(next);
     setResume(null);
     setJob(null);
     setJobText("");
+    setStep(0);
   }
 
   async function uploadResume() {
@@ -132,6 +169,7 @@ export function AnalysisFlow({
       });
       setJob(null);
       toast.success("Resume uploaded and structured");
+      setStep(1);
     });
   }
 
@@ -162,6 +200,7 @@ export function AnalysisFlow({
       }
       setJob({ id: data.id, structured: data.structured });
       toast.success("Job description saved and structured");
+      setStep(2);
     });
   }
 
@@ -178,6 +217,7 @@ export function AnalysisFlow({
       setJob(null);
       setJobText("");
       setFile(null);
+      setStep(0);
       toast.success("Resume deleted");
     });
   }
@@ -198,215 +238,339 @@ export function AnalysisFlow({
         </div>
       )}
 
-      <section className="rounded-3xl border border-white/10 bg-[#151B24]/90 p-5 shadow-2xl sm:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-[#00C2FF] uppercase">
-              Upload
-            </p>
-            <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
-              Drop in your resume
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
-              DOCX only. We store your file until you delete it. Export later will be
-              a clean new document, not a visual clone of the original.
-            </p>
-          </div>
-          <StepMark n="01" active={step1Active} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {STEP_META.map((meta, index) => {
+            const unlocked = index <= maxStep;
+            const active = step === index;
+            return (
+              <button
+                key={meta.n}
+                type="button"
+                onClick={() => goTo(index)}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium tracking-[0.14em] uppercase transition-all duration-200 ${
+                  active
+                    ? meta.active
+                    : unlocked
+                      ? `border-white/15 bg-white/5 text-white ${meta.hover}`
+                      : "cursor-not-allowed border-white/5 bg-transparent text-white/25"
+                }`}
+              >
+                <span className={meta.accent}>{meta.n}</span>
+                {meta.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <label className="mb-2 block text-sm text-white/55" htmlFor="resume">
-              Resume file
-            </label>
-            <Input
-              id="resume"
-              type="file"
-              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              disabled={!canUpload || pending}
-              className="h-11 rounded-2xl border-white/15 bg-[#0B0F14] text-white file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-3 file:py-1 file:text-white"
-              onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
-            />
-          </div>
+        <div className="flex items-center gap-2">
           <Button
             type="button"
-            className="rounded-full bg-[#FF5C35] px-5 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ff7a57] hover:shadow-[0_12px_30px_rgba(255,92,53,0.45)]"
-            disabled={!canUpload || pending || !file}
-            onClick={uploadResume}
+            variant="ghost"
+            size="sm"
+            className="rounded-full border border-white/15 text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10 hover:text-white hover:shadow-[0_0_16px_rgba(255,255,255,0.12)]"
+            disabled={step === 0 || pending}
+            onClick={() => goTo(step - 1)}
           >
-            Upload and extract
+            Back
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="rounded-full border border-white/15 text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10 hover:text-white hover:shadow-[0_0_16px_rgba(255,255,255,0.12)]"
+            disabled={step >= maxStep || pending}
+            onClick={() => goTo(step + 1)}
+          >
+            Next
           </Button>
         </div>
+      </div>
 
-        {file ? (
-          <p className="mt-3 text-xs text-white/45">
-            Selected: {file.name} ({Math.round(file.size / 1024)} KB)
-          </p>
-        ) : null}
-
-        {resume ? (
-          <div className="mt-7 rounded-3xl border border-[#7CFFB2]/30 bg-[#0F1A16] p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl">
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${step * 100}%)` }}
+        >
+          <section className="min-w-full bg-[#151B24] p-5 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs tracking-[0.16em] text-[#7CFFB2] uppercase">
-                  Extracted
+                <p className="text-xs font-semibold tracking-[0.2em] text-[#00C2FF] uppercase">
+                  Upload
                 </p>
-                <p className="mt-1 font-medium text-white">
-                  {resume.originalFilename}
+                <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
+                  Drop in your resume
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
+                  DOCX only. We store your file until you delete it. Export later will
+                  be a clean new document, not a visual clone of the original.
                 </p>
-                <p className="text-xs text-white/45">Status: {resume.status}</p>
+              </div>
+              <span className="font-[family-name:var(--font-editorial)] text-5xl italic text-[#FF5C35] sm:text-6xl">
+                01
+              </span>
+            </div>
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <label className="mb-2 block text-sm text-white/55" htmlFor="resume">
+                  Resume file
+                </label>
+                <label
+                  htmlFor="resume"
+                  className={`flex h-11 cursor-pointer items-center gap-3 rounded-2xl border border-white/15 bg-[#0B0F14] px-2 ${
+                    !canUpload || pending ? "pointer-events-none opacity-50" : ""
+                  }`}
+                >
+                  <span className="inline-flex h-8 items-center rounded-full bg-white/10 px-3 text-sm leading-none text-white">
+                    Choose File
+                  </span>
+                  <span className="truncate text-sm text-white/55">
+                    {file ? file.name : "No file chosen"}
+                  </span>
+                  <input
+                    id="resume"
+                    type="file"
+                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    disabled={!canUpload || pending}
+                    className="sr-only"
+                    onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+                  />
+                </label>
               </div>
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="rounded-full text-white hover:bg-white/10 hover:text-white"
-                disabled={pending}
-                onClick={deleteResume}
+                className="rounded-full bg-[#FF5C35] px-5 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ff7a57] hover:shadow-[0_12px_30px_rgba(255,92,53,0.45)]"
+                disabled={!canUpload || pending || !file}
+                onClick={uploadResume}
               >
-                Delete resume
+                Upload and extract
               </Button>
             </div>
 
-            {resume.extractionError ? (
-              <p className="mt-3 text-sm text-[#FF5C35]">{resume.extractionError}</p>
-            ) : (
-              <div className="mt-4 grid gap-3 text-sm text-white/70 sm:grid-cols-2">
-                <p>
-                  <span className="text-white">Name:</span>{" "}
-                  {resume.structured.contact.name || "Not detected"}
+            {file ? (
+              <p className="mt-3 text-xs text-white/45">
+                Selected: {file.name} ({Math.round(file.size / 1024)} KB)
+              </p>
+            ) : null}
+
+            {resume ? (
+              <div className="mt-7 rounded-3xl border border-[#7CFFB2]/30 bg-[#0F1A16] p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs tracking-[0.16em] text-[#7CFFB2] uppercase">
+                      Extracted
+                    </p>
+                    <p className="mt-1 font-medium text-white">
+                      {resume.originalFilename}
+                    </p>
+                    <p className="text-xs text-white/45">Status: {resume.status}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="rounded-full border border-[#FF5C35]/70 bg-[#FF5C35]/15 px-3 text-[#FF5C35] hover:bg-[#FF5C35] hover:text-white"
+                    disabled={pending}
+                    onClick={deleteResume}
+                  >
+                    Delete resume
+                  </Button>
+                </div>
+
+                {resume.extractionError ? (
+                  <p className="mt-3 text-sm text-[#FF5C35]">
+                    {resume.extractionError}
+                  </p>
+                ) : (
+                  <div className="mt-4 grid gap-3 text-sm text-white/70 sm:grid-cols-2">
+                    <p>
+                      <span className="text-white">Name:</span>{" "}
+                      {resume.structured.contact.name || "Not detected"}
+                    </p>
+                    <p>
+                      <span className="text-white">Email:</span>{" "}
+                      {resume.structured.contact.email || "Not detected"}
+                    </p>
+                    <p className="sm:col-span-2">
+                      <span className="text-white">Summary:</span>{" "}
+                      {resume.structured.summary
+                        ? `${resume.structured.summary.slice(0, 220)}${
+                            resume.structured.summary.length > 220 ? "..." : ""
+                          }`
+                        : "Not detected"}
+                    </p>
+                    <p>
+                      <span className="text-white">Experience roles:</span>{" "}
+                      {resume.structured.experience.length}
+                    </p>
+                    <p>
+                      <span className="text-white">Skills found:</span>{" "}
+                      {resume.structured.skills.length
+                        ? resume.structured.skills.slice(0, 8).join(", ")
+                        : "Not detected"}
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  className="mt-5 rounded-full bg-[#7CFFB2] px-5 text-[#0B0F14] hover:bg-white"
+                  onClick={() => goTo(1)}
+                >
+                  Continue to job
+                </Button>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="min-w-full bg-[#1A1010] p-5 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.2em] text-[#FF5C35] uppercase">
+                  Job
                 </p>
-                <p>
-                  <span className="text-white">Email:</span>{" "}
-                  {resume.structured.contact.email || "Not detected"}
-                </p>
-                <p className="sm:col-span-2">
-                  <span className="text-white">Summary:</span>{" "}
-                  {resume.structured.summary
-                    ? `${resume.structured.summary.slice(0, 220)}${
-                        resume.structured.summary.length > 220 ? "..." : ""
-                      }`
-                    : "Not detected"}
-                </p>
-                <p>
-                  <span className="text-white">Experience roles:</span>{" "}
-                  {resume.structured.experience.length}
-                </p>
-                <p>
-                  <span className="text-white">Skills found:</span>{" "}
-                  {resume.structured.skills.length
-                    ? resume.structured.skills.slice(0, 8).join(", ")
-                    : "Not detected"}
+                <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
+                  Paste the posting
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
+                  No URL import in MVP. Paste the posting text so we can structure
+                  title, skills, and requirements.
                 </p>
               </div>
+              <span className="font-[family-name:var(--font-editorial)] text-5xl italic text-[#FF5C35] sm:text-6xl">
+                02
+              </span>
+            </div>
+
+            {!resume ? (
+              <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/60">
+                Upload and extract a resume first, then this step unlocks.
+              </div>
+            ) : (
+              <>
+                <textarea
+                  className="mt-7 min-h-44 w-full rounded-3xl border border-white/15 bg-[#0B0F14] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/25"
+                  placeholder="Paste the full job description here"
+                  value={jobText}
+                  disabled={!canUpload || pending}
+                  onChange={(e) => {
+                    setJobText(e.target.value);
+                    setJob(null);
+                  }}
+                />
+
+                <div className="mt-4">
+                  <Button
+                    type="button"
+                    className="rounded-full bg-[#7CFFB2] px-5 text-[#0B0F14] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_30px_rgba(124,255,178,0.35)]"
+                    disabled={!canUpload || pending || jobText.trim().length < 40}
+                    onClick={saveJob}
+                  >
+                    Save and structure job
+                  </Button>
+                </div>
+
+                {job ? (
+                  <div className="mt-7 rounded-3xl border border-[#00C2FF]/30 bg-[#0D1820] p-5 text-sm text-white/70">
+                    <p className="text-xs font-semibold tracking-[0.16em] text-[#00C2FF] uppercase">
+                      Structured job
+                    </p>
+                    <p className="mt-3">
+                      <span className="text-white">Title:</span>{" "}
+                      {job.structured.title || "Not detected"}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-white">Company:</span>{" "}
+                      {job.structured.company || "Not detected"}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-white">Required skills:</span>{" "}
+                      {job.structured.requiredSkills.length
+                        ? job.structured.requiredSkills.slice(0, 10).join(", ")
+                        : "Not detected"}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-white">Keywords:</span>{" "}
+                      {job.structured.keywords.length
+                        ? job.structured.keywords.slice(0, 12).join(", ")
+                        : "Not detected"}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-white">Responsibilities:</span>{" "}
+                      {job.structured.responsibilities.length}
+                    </p>
+                    <Button
+                      type="button"
+                      className="mt-5 rounded-full bg-white px-5 text-[#0B0F14] hover:bg-[#7CFFB2]"
+                      onClick={() => goTo(2)}
+                    >
+                      Continue to analyze
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             )}
-          </div>
-        ) : null}
-      </section>
+          </section>
 
-      <section className="rounded-3xl border border-[#FF5C35]/35 bg-[#1A1010]/95 p-5 shadow-2xl sm:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-[#FF5C35] uppercase">
-              Job
-            </p>
-            <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
-              Paste the posting
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
-              No URL import in MVP. Paste the posting text so we can structure title,
-              skills, and requirements.
-            </p>
-          </div>
-          <StepMark n="02" active={step2Active} />
+          <section className="min-w-full bg-[#0F1A16] p-5 sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.2em] text-[#7CFFB2] uppercase">
+                  Analyze
+                </p>
+                <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
+                  Read the fit
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
+                  Analysis lands in the next batch. Your resume and job stay ready
+                  here. One use will be deducted only after a successful analysis.
+                </p>
+              </div>
+              <span className="font-[family-name:var(--font-editorial)] text-5xl italic text-[#7CFFB2] sm:text-6xl">
+                03
+              </span>
+            </div>
+
+            {!job ? (
+              <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-white/60">
+                Save a structured job first, then this step unlocks.
+              </div>
+            ) : (
+              <div className="mt-8 rounded-3xl border border-[#7CFFB2]/25 bg-[#0B0F14]/50 p-5">
+                <p className="text-sm text-white/70">
+                  Resume and job are ready. Fit analysis is next.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-5 rounded-full bg-white/10 px-5 text-white"
+                  disabled
+                >
+                  Analyze (coming next)
+                </Button>
+              </div>
+            )}
+          </section>
         </div>
+      </div>
 
-        <textarea
-          className="mt-7 min-h-44 w-full rounded-3xl border border-white/15 bg-[#0B0F14] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/25"
-          placeholder="Paste the full job description here"
-          value={jobText}
-          disabled={!canUpload || pending || !resume || resume.status !== "extracted"}
-          onChange={(e) => {
-            setJobText(e.target.value);
-            setJob(null);
-          }}
-        />
-
-        <div className="mt-4">
-          <Button
+      <div className="flex items-center justify-center gap-2">
+        {STEP_META.map((meta, index) => (
+          <button
+            key={meta.n}
             type="button"
-            className="rounded-full bg-[#7CFFB2] px-5 text-[#0B0F14] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_12px_30px_rgba(124,255,178,0.35)]"
-            disabled={
-              !canUpload ||
-              pending ||
-              !resume ||
-              resume.status !== "extracted" ||
-              jobText.trim().length < 40
-            }
-            onClick={saveJob}
-          >
-            Save and structure job
-          </Button>
-        </div>
-
-        {job ? (
-          <div className="mt-7 rounded-3xl border border-[#00C2FF]/30 bg-[#0D1820] p-5 text-sm text-white/70">
-            <p className="text-xs font-semibold tracking-[0.16em] text-[#00C2FF] uppercase">
-              Structured job
-            </p>
-            <p className="mt-3">
-              <span className="text-white">Title:</span>{" "}
-              {job.structured.title || "Not detected"}
-            </p>
-            <p className="mt-2">
-              <span className="text-white">Company:</span>{" "}
-              {job.structured.company || "Not detected"}
-            </p>
-            <p className="mt-2">
-              <span className="text-white">Required skills:</span>{" "}
-              {job.structured.requiredSkills.length
-                ? job.structured.requiredSkills.slice(0, 10).join(", ")
-                : "Not detected"}
-            </p>
-            <p className="mt-2">
-              <span className="text-white">Keywords:</span>{" "}
-              {job.structured.keywords.length
-                ? job.structured.keywords.slice(0, 12).join(", ")
-                : "Not detected"}
-            </p>
-            <p className="mt-2">
-              <span className="text-white">Responsibilities:</span>{" "}
-              {job.structured.responsibilities.length}
-            </p>
-          </div>
-        ) : null}
-      </section>
-
-      <section className="rounded-3xl border border-[#7CFFB2]/30 bg-[#0F1A16]/95 p-5 shadow-2xl sm:p-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-[#7CFFB2] uppercase">
-              Analyze
-            </p>
-            <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
-              Read the fit
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
-              Analysis lands in the next batch. Your resume and job stay ready here.
-              One use will be deducted only after a successful analysis.
-            </p>
-          </div>
-          <StepMark n="03" active={step3Active} />
-        </div>
-        <Button
-          type="button"
-          className="mt-7 rounded-full bg-white/10 px-5 text-white"
-          disabled
-        >
-          Analyze (coming next)
-        </Button>
-      </section>
+            aria-label={`Go to step ${meta.n}`}
+            onClick={() => goTo(index)}
+            className={`h-2.5 rounded-full transition-all duration-300 ${
+              step === index
+                ? `w-8 ${meta.dot}`
+                : index <= maxStep
+                  ? "w-2.5 bg-white/35 hover:w-4 hover:bg-white/60"
+                  : "w-2.5 bg-white/10"
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 }

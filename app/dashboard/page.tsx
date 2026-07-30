@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { getUserUsageSummary } from "@/lib/usage";
 import { Button } from "@/components/ui/button";
 import { AnalysisFlow } from "@/components/dashboard/analysis-flow";
+import { PulseStack } from "@/components/dashboard/pulse-stack";
 import { AppShell } from "@/components/layout/app-shell";
 
 export default async function DashboardPage({
@@ -72,29 +73,11 @@ export default async function DashboardPage({
             </p>
           </div>
 
-          <div className="animate-in fade-in slide-in-from-bottom-4 relative min-h-40 duration-700">
-            <div className="absolute top-0 left-2 w-[85%] rotate-[-4deg] rounded-2xl border border-white/15 bg-[#151B24] p-4 shadow-2xl sm:left-6">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs tracking-wide text-[#00C2FF] uppercase">
-                  Daily pulse
-                </span>
-                <span className="rounded-full bg-[#7CFFB2]/15 px-2 py-0.5 text-xs text-[#7CFFB2]">
-                  {remainingUses} left
-                </span>
-              </div>
-              <p className="mt-3 text-sm text-white/70">
-                {usesUsedToday} used · {dailyAllowance} daily allowance
-              </p>
-            </div>
-            <div className="absolute top-16 right-0 w-[80%] rotate-[4deg] rounded-2xl border border-[#FF5C35]/40 bg-[#1A1010] p-4 shadow-2xl">
-              <p className="text-xs tracking-wide text-[#FF5C35] uppercase">
-                Flow
-              </p>
-              <p className="mt-2 text-sm text-white/70">
-                Upload → structure → paste job → analyze next
-              </p>
-            </div>
-          </div>
+          <PulseStack
+            remainingUses={remainingUses}
+            usesUsedToday={usesUsedToday}
+            dailyAllowance={dailyAllowance}
+          />
         </div>
 
         {justRegistered && dailyAllowance === 0 && (

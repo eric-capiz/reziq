@@ -17,7 +17,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   return (
-    <div className="relative min-h-full overflow-hidden bg-[#0B0F14] text-white">
+    <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#0B0F14] text-white">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-24 right-[-10%] size-[24rem] rounded-full bg-[#FF5C35]/25 blur-3xl sm:size-[34rem]"
@@ -52,7 +52,21 @@ export function AppShell({
         </div>
       </header>
 
-      <div className="relative z-10">{children}</div>
+      <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+
+      <footer className="relative z-10 mt-auto border-t border-white/10 px-4 py-6 text-center text-sm text-white/45 sm:px-6">
+        <p>
+          © {new Date().getFullYear()} · Developed by{" "}
+          <a
+            href="https://www.ericcapiz.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-[#7CFFB2] underline-offset-4 transition-colors duration-200 hover:text-white hover:underline"
+          >
+            Eric Capiz
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
