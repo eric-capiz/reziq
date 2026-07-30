@@ -19,7 +19,8 @@ Connect MongoDB and define collections or schemas for users, resumes, job inputs
 * MongoDB connection is working
 * User model is live with unique username and email
 * AiProviderDaily model tracks provider requests, tokens, exhausted state, and last activity
-* Resume, job, analysis, recommendation, and export models are still pending
+* Resume and JobInput models are live
+* Analysis, recommendation, and export models are still pending
 
 ## Slice 3: Authentication
 
@@ -52,7 +53,7 @@ Add per user daily allowances. New users start at 0 and see a message that an ad
 * New users start at 0 and see waiting or empty allowance messaging
 * Dashboard shows used, left, and daily allowance
 * consumeSuccessfulAnalysis helper is ready for the analysis engine
-* Actual analysis blocking will attach when upload and analysis slices land
+* Upload and job paste are blocked when remaining uses are 0
 
 ## Slice 6: Admin dashboard basics
 
@@ -72,17 +73,40 @@ Admin can list registered users, see assigned and remaining uses, and grant or a
 
 Set up cloud object storage for uploaded DOCX files. Store only storage keys and metadata in MongoDB. Support secure upload and authenticated file access.
 
+**Status: Done**
+* Cloudflare R2 helper uploads and deletes resume objects
+* Mongo Resume records store storageKey and file metadata
+* Original DOCX stays in R2 until the user deletes the resume
+
 ## Slice 8: Resume upload (DOCX only)
 
 Let logged in users with uses available upload a DOCX resume. Reject non DOCX files. Show guidance about ATS friendly formatting and that export will be a clean new document, not a visual clone of the original.
+
+**Status: Done**
+* Dashboard continuous flow step 1 uploads DOCX only
+* Upload blocked with clear messaging when out of uses today
+* Non DOCX files rejected
+* Delete resume removes Mongo record, linked jobs, and R2 object
 
 ## Slice 9: Resume text extraction and structuring
 
 Extract text from the uploaded DOCX and normalize it into structured resume data (contact, experience, education, skills, and related sections). Persist the structured resume for analysis and later export.
 
+**Status: Done for current stage**
+* mammoth extracts raw DOCX text
+* Heuristic structuring fills contact, summary, experience, education, and skills
+* Structured preview shown on the dashboard after upload
+* AI based structuring polish can improve this in later AI slices
+
 ## Slice 10: Job description input
 
 Let users paste a job description (no URL import). Save the raw text and run structured extraction for title, company, required skills, preferred skills, education, certifications, experience, responsibilities, keywords, and ATS phrases.
+
+**Status: Done for current stage**
+* Dashboard continuous flow step 2 pastes job text (no URL import)
+* JobInput saved against the uploaded resume
+* Heuristic structuring fills title, company, skills, keywords, and responsibilities
+* Analyze step placeholder waits for the AI batch
 
 ## Slice 11: AI service abstraction
 

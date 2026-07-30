@@ -44,6 +44,8 @@ uploads/
 tmp/
 temp/
 .cache/
+fixtures/*.docx
+fixtures/*.DOCX
 
 # os files
 .DS_Store
