@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db";
 import { getUserUsageSummary } from "@/lib/usage";
 import { Button } from "@/components/ui/button";
 import { AnalysisFlow } from "@/components/dashboard/analysis-flow";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default async function DashboardPage({
   searchParams,
@@ -26,63 +27,89 @@ export default async function DashboardPage({
   const justRegistered = params.welcome === "1";
 
   return (
-    <div className="min-h-full bg-[color:var(--mist)]">
-      <header className="border-b border-black/5 bg-[#0B0F14] text-white">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <Link
-            href="/"
-            className="font-[family-name:var(--font-editorial)] text-xl italic tracking-tight"
-          >
-            RezIQ
-          </Link>
-          <div className="flex items-center gap-2">
-            {session.user.role === "admin" && (
-              <Link
-                href="/admin"
-                className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
-              >
-                Admin
-              </Link>
-            )}
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
+    <AppShell
+      actions={
+        <>
+          {session.user.role === "admin" && (
+            <Link
+              href="/admin"
+              className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
             >
-              <Button
-                type="submit"
-                variant="ghost"
-                size="sm"
-                className="rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:text-white"
-              >
-                Log out
-              </Button>
-            </form>
+              Admin
+            </Link>
+          )}
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/" });
+            }}
+          >
+            <Button
+              type="submit"
+              variant="ghost"
+              size="sm"
+              className="rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:text-white"
+            >
+              Log out
+            </Button>
+          </form>
+        </>
+      }
+    >
+      <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
+        <div className="grid items-end gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="animate-in fade-in slide-in-from-left-4 duration-700">
+            <p className="mb-4 inline-flex rounded-full border border-[#7CFFB2]/40 bg-[#7CFFB2]/10 px-3 py-1 text-xs font-medium tracking-[0.2em] text-[#7CFFB2] uppercase">
+              Your workspace
+            </p>
+            <h1 className="font-[family-name:var(--font-editorial)] text-5xl leading-[0.92] font-medium tracking-tight sm:text-6xl md:text-7xl">
+              Hey{" "}
+              <span className="italic text-[#FF5C35]">{session.user.username}</span>
+            </h1>
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-white/70">
+              Upload a DOCX, paste a job, and get ready for an evidence based fit
+              read.
+            </p>
+          </div>
+
+          <div className="animate-in fade-in slide-in-from-bottom-4 relative min-h-40 duration-700">
+            <div className="absolute top-0 left-2 w-[85%] rotate-[-4deg] rounded-2xl border border-white/15 bg-[#151B24] p-4 shadow-2xl sm:left-6">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs tracking-wide text-[#00C2FF] uppercase">
+                  Daily pulse
+                </span>
+                <span className="rounded-full bg-[#7CFFB2]/15 px-2 py-0.5 text-xs text-[#7CFFB2]">
+                  {remainingUses} left
+                </span>
+              </div>
+              <p className="mt-3 text-sm text-white/70">
+                {usesUsedToday} used · {dailyAllowance} daily allowance
+              </p>
+            </div>
+            <div className="absolute top-16 right-0 w-[80%] rotate-[4deg] rounded-2xl border border-[#FF5C35]/40 bg-[#1A1010] p-4 shadow-2xl">
+              <p className="text-xs tracking-wide text-[#FF5C35] uppercase">
+                Flow
+              </p>
+              <p className="mt-2 text-sm text-white/70">
+                Upload → structure → paste job → analyze next
+              </p>
+            </div>
           </div>
         </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
-        <h1 className="font-[family-name:var(--font-editorial)] text-3xl font-medium text-[#0B0F14] sm:text-4xl">
-          Hey {session.user.username}
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Role: {session.user.role} · Today: {usesUsedToday} used · {remainingUses}{" "}
-          left of {dailyAllowance} daily
-        </p>
 
         {justRegistered && dailyAllowance === 0 && (
-          <div className="mt-6 rounded-3xl border border-[#00C2FF]/30 bg-[#00C2FF]/10 px-4 py-4 text-[#0B0F14]">
-            <p className="font-semibold">Thanks for registering</p>
-            <p className="mt-1 text-sm leading-relaxed sm:text-base">
+          <div className="mt-12 rounded-3xl border border-[#00C2FF]/35 bg-[#101820] px-5 py-5">
+            <p className="font-[family-name:var(--font-editorial)] text-2xl italic">
+              Thanks for registering
+            </p>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65 sm:text-base">
               An admin will assign your daily uses. Please check back later before
               uploading a resume.
             </p>
           </div>
         )}
 
-        <div className="mt-8">
+        <div className="mt-14">
           <AnalysisFlow
             canUpload={canUpload}
             dailyAllowance={dailyAllowance}
@@ -90,6 +117,6 @@ export default async function DashboardPage({
           />
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

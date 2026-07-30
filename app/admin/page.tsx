@@ -6,6 +6,7 @@ import { User } from "@/models/User";
 import { getAiAdminStats } from "@/lib/ai-status";
 import { getRemainingUses, syncUserDailyUsage } from "@/lib/usage";
 import { AdminDashboardClient } from "@/components/admin/admin-dashboard-client";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -34,39 +35,43 @@ export default async function AdminPage() {
   const initialAiStats = await getAiAdminStats();
 
   return (
-    <div className="min-h-full bg-[color:var(--mist)]">
-      <header className="border-b border-black/5 bg-[#0B0F14] text-white">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <Link
-            href="/dashboard"
-            className="font-[family-name:var(--font-editorial)] text-xl italic tracking-tight"
-          >
-            RezIQ Admin
-          </Link>
-          <Link
-            href="/dashboard"
-            className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
-          >
-            Back to dashboard
-          </Link>
+    <AppShell
+      brandHref="/dashboard"
+      brandLabel={
+        <>
+          <span className="italic text-[#FF5C35]">Rez</span>IQ{" "}
+          <span className="text-white/45">Admin</span>
+        </>
+      }
+      actions={
+        <Link
+          href="/dashboard"
+          className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
+        >
+          Back to dashboard
+        </Link>
+      }
+    >
+      <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
+        <div className="animate-in fade-in slide-in-from-left-4 duration-700">
+          <p className="mb-4 inline-flex rounded-full border border-[#FF5C35]/40 bg-[#FF5C35]/10 px-3 py-1 text-xs font-medium tracking-[0.2em] text-[#FF5C35] uppercase">
+            Control room
+          </p>
+          <h1 className="font-[family-name:var(--font-editorial)] text-5xl leading-[0.92] font-medium tracking-tight sm:text-6xl md:text-7xl">
+            Admin
+          </h1>
+          <p className="mt-5 max-w-md text-lg leading-relaxed text-white/70">
+            Manage daily allowances and watch AI provider capacity.
+          </p>
         </div>
-      </header>
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
-        <h1 className="font-[family-name:var(--font-editorial)] text-3xl font-medium text-[#0B0F14] sm:text-4xl">
-          Admin
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Manage daily allowances and watch AI provider capacity.
-        </p>
-
-        <div className="mt-8">
+        <div className="mt-12">
           <AdminDashboardClient
             initialUsers={initialUsers}
             initialAiStats={initialAiStats}
           />
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

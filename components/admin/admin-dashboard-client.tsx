@@ -130,32 +130,35 @@ export function AdminDashboardClient({
   }
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-5">
+      <section className="rounded-3xl border border-white/10 bg-[#151B24]/90 p-5 shadow-2xl sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="font-[family-name:var(--font-editorial)] text-2xl text-[#0B0F14]">
+            <p className="text-xs font-semibold tracking-[0.2em] text-[#00C2FF] uppercase">
+              Capacity
+            </p>
+            <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
               AI capacity
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-3 text-sm text-white/65 sm:text-base">
               Estimated analyses left today:{" "}
-              <span className="font-semibold text-[#0B0F14]">
+              <span className="font-semibold text-[#7CFFB2]">
                 {aiStats.estimatedAnalysesLeft}
               </span>
             </p>
-            <p className="mt-2 text-sm text-[#0B0F14]">
+            <p className="mt-2 text-sm text-white/80">
               Breakdown: Groq {aiStats.breakdown.groq} · Cerebras{" "}
               {aiStats.breakdown.cerebras} · Gemini Flash Lite{" "}
               {aiStats.breakdown.gemini}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-white/40">
               Usage date {aiStats.date} · Resets around {aiStats.resetLabel}
             </p>
           </div>
           <Button
             type="button"
             size="sm"
-            className="rounded-full"
+            className="rounded-full bg-[#7CFFB2] text-[#0B0F14] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white"
             disabled={pending}
             onClick={refreshAiStats}
           >
@@ -163,20 +166,20 @@ export function AdminDashboardClient({
           </Button>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <div className="mt-7 grid gap-4 md:grid-cols-3">
           {PROVIDER_ORDER.map((provider) => {
             const stats = aiStats.providers[provider];
             return (
               <article
                 key={provider}
-                className="rounded-2xl border border-black/5 bg-[#F3F6FA] p-4"
+                className="rounded-3xl border border-white/10 bg-[#0B0F14] p-4"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold tracking-wide text-[#0B0F14]">
+                    <p className="text-sm font-semibold tracking-wide">
                       {stats.label}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-white/45">
                       {stats.role}
                       {aiStats.currentProvider === provider
                         ? " · Preferred / in rotation"
@@ -189,24 +192,24 @@ export function AdminDashboardClient({
                     {lampLabels[stats.lamp]}
                   </span>
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm text-white/70">
                   <div>
-                    <dt className="text-slate-500">Requests today</dt>
-                    <dd className="font-medium text-[#0B0F14]">{stats.requests}</dd>
+                    <dt className="text-white/40">Requests today</dt>
+                    <dd className="font-medium text-white">{stats.requests}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Est. analyses left</dt>
-                    <dd className="font-medium text-[#0B0F14]">
+                    <dt className="text-white/40">Est. analyses left</dt>
+                    <dd className="font-medium text-white">
                       {stats.estimatedAnalysesLeft}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Tokens in</dt>
-                    <dd className="font-medium text-[#0B0F14]">{stats.tokensIn}</dd>
+                    <dt className="text-white/40">Tokens in</dt>
+                    <dd className="font-medium text-white">{stats.tokensIn}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Tokens out</dt>
-                    <dd className="font-medium text-[#0B0F14]">{stats.tokensOut}</dd>
+                    <dt className="text-white/40">Tokens out</dt>
+                    <dd className="font-medium text-white">{stats.tokensOut}</dd>
                   </div>
                 </dl>
                 {stats.lastError ? (
@@ -217,25 +220,28 @@ export function AdminDashboardClient({
           })}
         </div>
 
-        <p className="mt-4 text-xs text-slate-500">
+        <p className="mt-4 text-xs text-white/40">
           Green means actively used recently. Purple means quota remains but idle.
           Red means daily limit reached. Estimates get sharper once real analyses
           run.
         </p>
       </section>
 
-      <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm sm:p-6">
-        <h2 className="font-[family-name:var(--font-editorial)] text-2xl text-[#0B0F14]">
-          User daily allowances
+      <section className="rounded-3xl border border-[#FF5C35]/30 bg-[#1A1010]/95 p-5 shadow-2xl sm:p-8">
+        <p className="text-xs font-semibold tracking-[0.2em] text-[#FF5C35] uppercase">
+          Users
+        </p>
+        <h2 className="mt-3 font-[family-name:var(--font-editorial)] text-3xl sm:text-5xl">
+          Daily allowances
         </h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-3 text-sm text-white/65 sm:text-base">
           Set how many analyses each person gets every day. Totals today: {totalUsed}{" "}
           used across {totalAllowance} allotted.
         </p>
 
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-7 overflow-x-auto rounded-3xl border border-white/10">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-[#F3F6FA] text-slate-600">
+            <thead className="border-b border-white/10 bg-[#0B0F14] text-white/55">
               <tr>
                 <th className="px-3 py-3 font-medium">Username</th>
                 <th className="px-3 py-3 font-medium">Email</th>
@@ -246,20 +252,20 @@ export function AdminDashboardClient({
                 <th className="px-3 py-3 font-medium">Save</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-[#151B24]/80">
               {users.map((user) => (
-                <tr key={user.id} className="border-b border-slate-100">
-                  <td className="px-3 py-3 font-medium text-[#0B0F14]">
+                <tr key={user.id} className="border-b border-white/5">
+                  <td className="px-3 py-3 font-medium text-white">
                     {user.username}
                   </td>
-                  <td className="px-3 py-3 text-slate-600">{user.email}</td>
-                  <td className="px-3 py-3 text-slate-600">{user.role}</td>
-                  <td className="px-3 py-3 text-slate-600">{user.usesUsedToday}</td>
+                  <td className="px-3 py-3 text-white/60">{user.email}</td>
+                  <td className="px-3 py-3 text-white/60">{user.role}</td>
+                  <td className="px-3 py-3 text-white/60">{user.usesUsedToday}</td>
                   <td className="px-3 py-3">
                     <Input
                       type="number"
                       min={0}
-                      className="w-24"
+                      className="w-24 rounded-xl border-white/15 bg-[#0B0F14] text-white"
                       value={drafts[user.id] ?? "0"}
                       onChange={(e) =>
                         setDrafts((prev) => ({
@@ -269,12 +275,12 @@ export function AdminDashboardClient({
                       }
                     />
                   </td>
-                  <td className="px-3 py-3 text-slate-600">{user.remainingUses}</td>
+                  <td className="px-3 py-3 text-white/60">{user.remainingUses}</td>
                   <td className="px-3 py-3">
                     <Button
                       type="button"
                       size="sm"
-                      className="rounded-full"
+                      className="rounded-full bg-[#FF5C35] text-white hover:bg-[#ff7a57]"
                       disabled={pending}
                       onClick={() => saveAllowance(user.id)}
                     >
