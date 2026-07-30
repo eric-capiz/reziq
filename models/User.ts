@@ -1,4 +1,10 @@
-import { Schema, models, model, type InferSchemaType } from "mongoose";
+import {
+  Schema,
+  models,
+  model,
+  type HydratedDocument,
+  type InferSchemaType,
+} from "mongoose";
 
 const UserSchema = new Schema(
   {
@@ -25,17 +31,25 @@ const UserSchema = new Schema(
       enum: ["admin", "user"],
       default: "user",
     },
-    usesAssigned: {
+    dailyAllowance: {
       type: Number,
       default: 0,
       min: 0,
+    },
+    usesUsedToday: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    usageDate: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }
 );
 
-export type UserDocument = InferSchemaType<typeof UserSchema> & {
-  _id: Schema.Types.ObjectId;
-};
+export type UserFields = InferSchemaType<typeof UserSchema>;
+export type UserDocument = HydratedDocument<UserFields>;
 
 export const User = models.User || model("User", UserSchema);

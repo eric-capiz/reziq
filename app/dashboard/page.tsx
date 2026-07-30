@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
-import { User } from "@/models/User";
+import { getUserUsageSummary } from "@/lib/usage";
 import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage({
@@ -16,8 +16,10 @@ export default async function DashboardPage({
   }
 
   await connectDB();
-  const dbUser = await User.findById(session.user.id).lean();
-  const usesAssigned = dbUser?.usesAssigned ?? session.user.usesAssigned ?? 0;
+  const usage = await getUserUsageSummary(session.user.id);
+  const dailyAllowance = usage?.dailyAllowance ?? 0;
+  const usesUsedToday = usage?.usesUsedToday ?? 0;
+  const remainingUses = usage?.remainingUses ?? 0;
   const params = await searchParams;
   const justRegistered = params.welcome === "1";
 
@@ -64,21 +66,26 @@ export default async function DashboardPage({
           Hey {session.user.username}
         </h1>
         <p className="mt-2 text-slate-600">
-          Role: {session.user.role} · Uses assigned: {usesAssigned}
+          Role: {session.user.role} · Today: {usesUsedToday} used · {remainingUses}{" "}
+          left of {dailyAllowance} daily
         </p>
 
-        {(justRegistered || usesAssigned === 0) &&
-          session.user.role !== "admin" && (
-            <div className="mt-6 rounded-3xl border border-[#FF5C35]/30 bg-[#FF5C35]/10 px-4 py-4 text-[#0B0F14]">
-              <p className="font-semibold">
-                {justRegistered ? "Thanks for registering" : "No uses assigned yet"}
-              </p>
-              <p className="mt-1 text-sm leading-relaxed sm:text-base">
-                An admin will assign your uses. Please check back later before
-                starting an analysis.
-              </p>
-            </div>
-          )}
+        {remainingUses === 0 && (
+          <div className="mt-6 rounded-3xl border border-[#FF5C35]/30 bg-[#FF5C35]/10 px-4 py-4 text-[#0B0F14]">
+            <p className="font-semibold">
+              {justRegistered
+                ? "Thanks for registering"
+                : dailyAllowance === 0
+                  ? "No daily uses assigned yet"
+                  : "No uses left today"}
+            </p>
+            <p className="mt-1 text-sm leading-relaxed sm:text-base">
+              {dailyAllowance === 0
+                ? "An admin will assign your daily uses. Please check back later before starting an analysis."
+                : "Your daily allowance is used up. It refills on the next daily reset, or an admin can raise your allowance."}
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
           <h2 className="font-[family-name:var(--font-editorial)] text-xl text-[#0B0F14]">
@@ -86,7 +93,7 @@ export default async function DashboardPage({
           </h2>
           <p className="mt-2 text-slate-600">
             Resume upload and analysis land in the next development batches.
-            This dashboard confirms auth, roles, and usage gating are working.
+            Analysis will only run when you have remaining daily uses.
           </p>
         </div>
       </main>

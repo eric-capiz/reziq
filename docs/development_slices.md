@@ -4,27 +4,69 @@ Incremental build plan based on the product vision and the agreed technical deci
 
 ## Slice 1: Project foundation
 
-Scaffold the Next.js app with TypeScript, Tailwind, and a UI component setup. Establish folder structure for auth, users, resumes, jobs, AI, documents, storage, and admin. Add env example files and basic app shell routing.
+Scaffold the Next.js app with TypeScript, Tailwind, and a UI component setup. Establish folder structure for auth, users, resumes, jobs, AI, documents, storage, and admin. Add env files and basic app shell routing.
+
+**Status: Done**
+* Next.js, TypeScript, Tailwind, and shadcn UI are set up
+* App shell, routing, providers, and env wiring are in place
+* Locked visual theme is the coral mint near black welcome style
 
 ## Slice 2: MongoDB and core data models
 
-Connect MongoDB and define collections/schemas for users, resumes, job inputs, analyses, recommendations, exports, and AI usage. Include unique indexes for email and username.
+Connect MongoDB and define collections or schemas for users, resumes, job inputs, analyses, recommendations, exports, and AI usage. Include unique indexes for email and username.
+
+**Status: Partial**
+* MongoDB connection is working
+* User model is live with unique username and email
+* AiProviderDaily model tracks provider requests, tokens, exhausted state, and last activity
+* Resume, job, analysis, recommendation, and export models are still pending
 
 ## Slice 3: Authentication
 
 Implement Auth.js with email, username, and password registration. Login with username and password. Enforce unique email and username. Support admin and user roles. Protect private routes.
 
+**Status: Done**
+* Register with username, email, and password
+* Login with username and password
+* Usernames are case insensitive and passwords are case sensitive
+* Admin seed from env
+* Dashboard and admin routes are protected
+
 ## Slice 4: Welcome page and product messaging
 
 Build the public welcome page that explains RezIQ, privacy basics, DOCX only uploads, and limited daily usage. Include clear paths to register and log in.
 
+**Status: Done**
+* Public welcome page with purpose, how to, and callouts
+* Auth modal with one dynamic login or register form
+* Hover styles on CTAs
+* Footer with dynamic year and Eric Capiz link
+
 ## Slice 5: Usage assignment and access gating
 
-Add per user assigned uses. New users start at 0 and see a message that an admin will assign uses and they should check back later. Block analysis until uses remain. Decrement uses when a full analysis run starts or completes (decide exact rule during implementation).
+Add per user daily allowances. New users start at 0 and see a message that an admin will assign uses and they should check back later. Block analysis until uses remain. Deduct one use only when an analysis finishes successfully.
+
+**Status: Done for current stage**
+* dailyAllowance, usesUsedToday, and usageDate fields are live
+* Daily reset uses America/Denver
+* New users start at 0 and see waiting or empty allowance messaging
+* Dashboard shows used, left, and daily allowance
+* consumeSuccessfulAnalysis helper is ready for the analysis engine
+* Actual analysis blocking will attach when upload and analysis slices land
 
 ## Slice 6: Admin dashboard basics
 
-Admin can list registered users, see assigned and remaining uses, and grant or adjust uses. Show estimated global AI capacity remaining and refill timing placeholders to refine later with real measurements.
+Admin can list registered users, see assigned and remaining uses, and grant or adjust uses. Show estimated global AI capacity remaining and refill timing. Show provider status lamps for Groq, Cerebras, and Gemini.
+
+**Status: Done for current stage**
+* Admin user list with used today, daily allowance, and remaining
+* Admin can type and save a daily allowance per user
+* AI capacity panel with total estimated analyses left and reset label
+* Breakdown of estimated uses for Groq, Cerebras, and Gemini Flash Lite
+* Provider lamps: green active, purple available idle, red exhausted
+* Stats refresh endpoint is live
+* Caps match console free tiers (Groq tokens/day, Cerebras tokens/day, Gemini requests/day)
+* Estimates will get sharper after real AI analyses run and log tokens
 
 ## Slice 7: Object storage for resumes
 
@@ -32,7 +74,7 @@ Set up cloud object storage for uploaded DOCX files. Store only storage keys and
 
 ## Slice 8: Resume upload (DOCX only)
 
-Let logged in users with uses available (or at least accounts ready for later analysis) upload a DOCX resume. Reject non DOCX files. Show guidance about ATS friendly formatting and that export will be a clean new document, not a visual clone of the original.
+Let logged in users with uses available upload a DOCX resume. Reject non DOCX files. Show guidance about ATS friendly formatting and that export will be a clean new document, not a visual clone of the original.
 
 ## Slice 9: Resume text extraction and structuring
 
@@ -44,11 +86,11 @@ Let users paste a job description (no URL import). Save the raw text and run str
 
 ## Slice 11: AI service abstraction
 
-Build the AIService interface with provider adapters, sticky provider per analysis session, structured JSON validation, retry/repair once, usage logging, and clear failure when providers are unavailable.
+Build the AIService interface with provider adapters, sticky provider per analysis session, structured JSON validation, retry or repair once, usage logging, and clear failure when providers are unavailable.
 
 ## Slice 12: Groq provider
 
-Implement Groq as the primary provider using `llama-3.3-70b-versatile`. Log requests and token usage.
+Implement Groq as the primary provider using llama 3.3 70b versatile. Log requests and token usage into AiProviderDaily.
 
 ## Slice 13: Gemini fallback provider
 
@@ -56,7 +98,7 @@ Implement Google AI Studio Gemini Flash as fallback when Groq fails or hits limi
 
 ## Slice 14: Fit analysis engine
 
-Compare structured resume vs structured job data. Produce Strong fit, Possible fit, or Poor fit with evidence for matches, partial matches, and gaps. No public percentage scores. Cache results for the same inputs. Consume a user use for a completed analysis attempt according to the Slice 5 rule.
+Compare structured resume vs structured job data. Produce Strong fit, Possible fit, or Poor fit with evidence for matches, partial matches, and gaps. No public percentage scores. Cache results for the same inputs. Consume a user use only after a successful analysis.
 
 ## Slice 15: Recommendation workflow
 
@@ -72,7 +114,7 @@ Generate a new ATS friendly resume from the updated structured content. Allow do
 
 ## Slice 18: User analysis history
 
-Let users view their past uploads, job inputs, fit verdicts, recommendation decisions, and exports. Support deleting a resume/analysis and its stored files.
+Let users view their past uploads, job inputs, fit verdicts, recommendation decisions, and exports. Support deleting a resume or analysis and its stored files.
 
 ## Slice 19: Privacy and deletion hardening
 
@@ -93,5 +135,5 @@ Improve loading states, error messages (including both AI providers exhausted), 
 * Hugging Face or paid AI providers
 * In place DOCX surgical editing
 * Public match percentage scores
-* School SSO / SAML
+* School SSO or SAML
 * Payments or lifetime billing

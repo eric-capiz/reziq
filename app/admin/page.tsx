@@ -3,6 +3,9 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { getAiAdminStats } from "@/lib/ai-status";
+import { getRemainingUses, syncUserDailyUsage } from "@/lib/usage";
+import { AdminDashboardClient } from "@/components/admin/admin-dashboard-client";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -11,9 +14,24 @@ export default async function AdminPage() {
 
   await connectDB();
   const users = await User.find({})
-    .select("username email role usesAssigned createdAt")
-    .sort({ createdAt: -1 })
-    .lean();
+    .select("username email role dailyAllowance usesUsedToday usageDate")
+    .sort({ createdAt: -1 });
+
+  for (const user of users) {
+    await syncUserDailyUsage(user);
+  }
+
+  const initialUsers = users.map((user) => ({
+    id: String(user._id),
+    username: user.username,
+    email: user.email,
+    role: user.role as "admin" | "user",
+    dailyAllowance: user.dailyAllowance,
+    usesUsedToday: user.usesUsedToday,
+    remainingUses: getRemainingUses(user),
+  }));
+
+  const initialAiStats = await getAiAdminStats();
 
   return (
     <div className="min-h-full bg-[color:var(--mist)]">
@@ -36,36 +54,17 @@ export default async function AdminPage() {
 
       <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
         <h1 className="font-[family-name:var(--font-editorial)] text-3xl font-medium text-[#0B0F14] sm:text-4xl">
-          Users
+          Admin
         </h1>
         <p className="mt-2 text-slate-600">
-          Assigning uses and capacity meters come next. You can already see who
-          registered.
+          Manage daily allowances and watch AI provider capacity.
         </p>
 
-        <div className="mt-8 overflow-x-auto rounded-3xl border border-black/5 bg-white shadow-sm">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-slate-200 bg-[#F3F6FA] text-slate-600">
-              <tr>
-                <th className="px-4 py-3 font-medium">Username</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Uses</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={String(user._id)} className="border-b border-slate-100">
-                  <td className="px-4 py-3 font-medium text-[#0B0F14]">
-                    {user.username}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{user.email}</td>
-                  <td className="px-4 py-3 text-slate-600">{user.role}</td>
-                  <td className="px-4 py-3 text-slate-600">{user.usesAssigned}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-8">
+          <AdminDashboardClient
+            initialUsers={initialUsers}
+            initialAiStats={initialAiStats}
+          />
         </div>
       </main>
     </div>

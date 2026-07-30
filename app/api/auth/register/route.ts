@@ -53,7 +53,9 @@ export async function POST(request: Request) {
       email,
       passwordHash: await hash(parsed.data.password, 12),
       role: "user",
-      usesAssigned: 0,
+      dailyAllowance: 0,
+      usesUsedToday: 0,
+      usageDate: "",
     });
 
     return NextResponse.json({ ok: true });

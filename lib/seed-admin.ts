@@ -25,11 +25,24 @@ export async function ensureAdminUser() {
       email,
       passwordHash: await hash(password, 12),
       role: "admin",
-      usesAssigned: 100,
+      dailyAllowance: 20,
+      usesUsedToday: 0,
+      usageDate: "",
     });
-  } else if (existing.role !== "admin") {
-    existing.role = "admin";
-    await existing.save();
+  } else {
+    let dirty = false;
+    if (existing.role !== "admin") {
+      existing.role = "admin";
+      dirty = true;
+    }
+    if (
+      typeof existing.dailyAllowance !== "number" ||
+      existing.dailyAllowance <= 0
+    ) {
+      existing.dailyAllowance = 20;
+      dirty = true;
+    }
+    if (dirty) await existing.save();
   }
 
   seeded = true;

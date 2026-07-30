@@ -4,6 +4,7 @@ import { compare } from "bcryptjs";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
+import { getRemainingUses, syncUserDailyUsage } from "@/lib/usage";
 
 const credentialsSchema = z.object({
   username: z.string().min(1),
@@ -37,12 +38,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await compare(parsed.data.password, user.passwordHash);
         if (!valid) return null;
 
+        await syncUserDailyUsage(user);
+
         return {
           id: String(user._id),
           name: user.username,
           email: user.email,
           role: user.role,
-          usesAssigned: user.usesAssigned,
+          dailyAllowance: user.dailyAllowance,
+          remainingUses: getRemainingUses(user),
         };
       },
     }),
@@ -52,7 +56,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = user.role;
-        token.usesAssigned = user.usesAssigned;
+        token.dailyAllowance = user.dailyAllowance;
+        token.remainingUses = user.remainingUses;
         token.username = user.name ?? undefined;
       }
       return token;
@@ -61,7 +66,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "admin" | "user";
-        session.user.usesAssigned = token.usesAssigned as number;
+        session.user.dailyAllowance = (token.dailyAllowance as number) ?? 0;
+        session.user.remainingUses = (token.remainingUses as number) ?? 0;
         session.user.username = token.username as string;
       }
       return session;
