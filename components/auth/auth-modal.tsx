@@ -114,7 +114,7 @@ export function AuthModal({
           <DialogDescription>
             {mode === "login"
               ? "Log in with your username and password."
-              : "Register to get started. An admin will assign your uses."}
+              : "Register to get started. New accounts begin with 2 daily uses."}
           </DialogDescription>
         </DialogHeader>
 

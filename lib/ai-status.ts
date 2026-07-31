@@ -96,10 +96,26 @@ export async function markProviderExhausted(
   );
 }
 
+function tokensPerAnalysisFor(provider: ProviderName, doc: UsageDoc) {
+  const caps = PROVIDER_CAPS[provider];
+  const tokensUsed = doc.tokensIn + doc.tokensOut;
+  if (doc.requests >= 4 && tokensUsed > 0) {
+    const observedPerRequest = tokensUsed / doc.requests;
+    const observedPerAnalysis =
+      observedPerRequest * caps.requestsPerAnalysis;
+    // Blend default with observed so early noisy samples do not dominate.
+    return Math.round(
+      caps.tokensPerAnalysis * 0.4 + observedPerAnalysis * 0.6
+    );
+  }
+  return caps.tokensPerAnalysis;
+}
+
 function estimateAnalysesLeft(provider: ProviderName, doc: UsageDoc) {
   if (doc.exhausted) return 0;
   const caps = PROVIDER_CAPS[provider];
   const tokensUsed = doc.tokensIn + doc.tokensOut;
+  const tokensPerAnalysis = tokensPerAnalysisFor(provider, doc);
   const candidates: number[] = [];
 
   if (caps.requestsPerDay != null) {
@@ -111,9 +127,7 @@ function estimateAnalysesLeft(provider: ProviderName, doc: UsageDoc) {
   }
   if (caps.tokensPerDay != null) {
     candidates.push(
-      Math.floor(
-        (caps.tokensPerDay - tokensUsed) / caps.tokensPerAnalysis
-      )
+      Math.floor((caps.tokensPerDay - tokensUsed) / tokensPerAnalysis)
     );
   }
 
@@ -234,6 +248,8 @@ export async function getAiAdminStats() {
     date,
     resetLabel: getNextResetLabel(),
     estimatedAnalysesLeft,
+    estimateNote:
+      "Estimates blend free tier caps with observed token use when enough calls exist today. Reset timing follows America/Denver.",
     breakdown: {
       groq: left.groq,
       cerebras: left.cerebras,

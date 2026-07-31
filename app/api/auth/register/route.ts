@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { connectDB } from "@/lib/db";
+import { NEW_USER_DAILY_ALLOWANCE } from "@/lib/usage-defaults";
 import { User } from "@/models/User";
 
 const registerSchema = z.object({
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
       email,
       passwordHash: await hash(parsed.data.password, 12),
       role: "user",
-      dailyAllowance: 0,
+      dailyAllowance: NEW_USER_DAILY_ALLOWANCE,
       usesUsedToday: 0,
       usageDate: "",
     });

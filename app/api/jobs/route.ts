@@ -25,8 +25,8 @@ export async function POST(request: Request) {
       {
         error:
           usage?.dailyAllowance === 0
-            ? "No daily uses assigned yet. An admin will assign uses. Please check back later."
-            : "Out of uses today. Try again tomorrow after the daily reset.",
+            ? "No daily uses assigned right now. An admin can grant uses when capacity allows. Please check back later."
+            : "Out of uses today. Uses reset daily. Try again after the daily reset.",
         code: "OUT_OF_USES",
       },
       { status: 403 }

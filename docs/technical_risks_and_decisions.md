@@ -150,7 +150,7 @@ Discussion of potential technical risks and alternative approaches. As each item
 * Store password hashes only (never plain text). Use a proven hash scheme such as bcrypt or Argon2.
 * User roles in Mongo: `admin` and `user`. The operator account is admin.
 * Anyone may register. New non admin users start with 0 assigned uses.
-* After registration, non admin users are shown that an admin will assign uses and they should check back later.
+* After registration, non admin users start with 2 daily uses. Copy explains that an admin can grant more when capacity allows and that uses reset daily.
 * Analysis and export stay locked until the admin assigns uses.
 * Admin can list users and assign uses manually.
 * School SSO / SAML / Google Workspace login is deferred to a later version if institutions adopt the product.

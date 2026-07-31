@@ -179,13 +179,14 @@ export function AnalysisFlow({
     null
   );
   const [usesLeft, setUsesLeft] = useState(remainingUses);
+  const [aiUnavailable, setAiUnavailable] = useState(false);
 
   const outOfUsesMessage = useMemo(() => {
     if (canUpload) return null;
     if (dailyAllowance === 0) {
-      return "No daily uses assigned yet. An admin will assign your daily uses. Please check back later.";
+      return "No daily uses assigned right now. An admin can grant uses when capacity allows. Please check back later.";
     }
-    return "Out of uses today. Try again tomorrow after the daily reset.";
+    return "Out of uses today. Uses reset daily. Try again after the daily reset.";
   }, [canUpload, dailyAllowance]);
 
   const maxStep = analysis ? 3 : job ? 2 : resume ? 1 : 0;
@@ -333,9 +334,14 @@ export function AnalysisFlow({
         });
         const data = await res.json();
         if (!res.ok) {
-          toast.error(data.error ?? "Analysis failed");
+          const message = data.error ?? "Analysis failed";
+          if (String(message).toLowerCase().includes("unavailable")) {
+            setAiUnavailable(true);
+          }
+          toast.error(message);
           return;
         }
+        setAiUnavailable(false);
         setAnalysis({
           id: data.analysis.id,
           verdict: data.analysis.verdict,
@@ -379,9 +385,14 @@ export function AnalysisFlow({
         );
         const data = await res.json();
         if (!res.ok) {
-          toast.error(data.error ?? "Could not get recommendations");
+          const message = data.error ?? "Could not get recommendations";
+          if (String(message).toLowerCase().includes("unavailable")) {
+            setAiUnavailable(true);
+          }
+          toast.error(message);
           return;
         }
+        setAiUnavailable(false);
         setRecommendationSet({
           id: data.set.id,
           analysisId: data.set.analysisId,
@@ -499,6 +510,19 @@ export function AnalysisFlow({
         </div>
       )}
 
+      {aiUnavailable && (
+        <div className="rounded-3xl border border-[#FF5C35]/40 bg-[#1A1010] px-5 py-5">
+          <p className="font-[family-name:var(--font-editorial)] text-2xl italic text-[#FF5C35]">
+            AI unavailable
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-white/70 sm:text-base">
+            Free AI processing is unavailable right now. All configured providers
+            are exhausted or unreachable. Please try again later after daily
+            capacity refreshes.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {STEP_META.map((meta, index) => {
@@ -605,9 +629,15 @@ export function AnalysisFlow({
                 disabled={!canUpload || pending || !file}
                 onClick={uploadResume}
               >
-                Upload and extract
+                {pending && file ? "Uploading..." : "Upload and extract"}
               </Button>
             </div>
+
+            {pending && file ? (
+              <p className="mt-3 text-sm text-white/55">
+                Extracting and structuring your resume...
+              </p>
+            ) : null}
 
             {file ? (
               <p className="mt-3 text-xs text-white/45">

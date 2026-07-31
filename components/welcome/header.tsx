@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AuthModal } from "@/components/auth/auth-modal";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 export function WelcomeHeader() {
   const router = useRouter();
@@ -48,19 +49,7 @@ export function WelcomeHeader() {
                 >
                   Profile
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:text-white"
-                  onClick={() => {
-                    void signOut({
-                      callbackUrl: `${window.location.origin}/`,
-                    });
-                  }}
-                >
-                  Log out
-                </Button>
+                <LogoutButton />
               </>
             ) : (
               <>

@@ -1,3 +1,5 @@
+import { NEW_USER_ALLOWANCE_NOTE } from "@/lib/usage-defaults";
+
 const notes = [
   {
     label: "Format",
@@ -8,7 +10,7 @@ const notes = [
   {
     label: "Access",
     title: "Limited daily uses",
-    body: "After signup, an admin assigns your uses. Check back if you are waiting.",
+    body: NEW_USER_ALLOWANCE_NOTE,
     accent: "bg-[#FF5C35]",
   },
   {

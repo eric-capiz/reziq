@@ -33,7 +33,7 @@ const UserSchema = new Schema(
     },
     dailyAllowance: {
       type: Number,
-      default: 0,
+      default: 2,
       min: 0,
     },
     usesUsedToday: {

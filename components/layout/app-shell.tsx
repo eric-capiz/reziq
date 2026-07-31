@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { auth } from "@/lib/auth";
+import { LogoutButton } from "@/components/auth/logout-button";
 
-export function AppShell({
+export async function AppShell({
   brandHref = "/",
   brandLabel = (
     <>
@@ -16,6 +18,8 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const session = await auth();
+
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#0B0F14] text-white">
       <div
@@ -48,7 +52,10 @@ export function AppShell({
           >
             {brandLabel}
           </Link>
-          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {actions}
+            {session?.user ? <LogoutButton /> : null}
+          </div>
         </div>
       </header>
 

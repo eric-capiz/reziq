@@ -33,6 +33,7 @@ type AiStats = {
   date: string;
   resetLabel: string;
   estimatedAnalysesLeft: number;
+  estimateNote?: string;
   breakdown: {
     groq: number;
     cerebras: number;
@@ -154,6 +155,11 @@ export function AdminDashboardClient({
             <p className="mt-1 text-xs text-white/40">
               Usage date {aiStats.date} · Resets around {aiStats.resetLabel}
             </p>
+            {aiStats.estimateNote ? (
+              <p className="mt-2 max-w-xl text-xs text-white/45">
+                {aiStats.estimateNote}
+              </p>
+            ) : null}
           </div>
           <Button
             type="button"

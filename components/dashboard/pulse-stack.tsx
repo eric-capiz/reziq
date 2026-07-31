@@ -50,6 +50,9 @@ export function PulseStack({
         </div>
         <p className="mt-3 text-sm text-white/70">
           {usesUsedToday} used · {dailyAllowance} daily allowance
+          {dailyAllowance > 0
+            ? " · resets daily"
+            : " · ask an admin for uses"}
         </p>
       </button>
 
@@ -65,7 +68,7 @@ export function PulseStack({
       >
         <p className="text-xs tracking-wide text-[#FF5C35] uppercase">Flow</p>
         <p className="mt-2 text-sm text-white/70">
-          Upload → structure → paste job → analyze next
+          Upload, structure, paste job, then analyze in Rez Desk
         </p>
       </button>
     </div>

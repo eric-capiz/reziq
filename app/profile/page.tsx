@@ -6,7 +6,6 @@ import { Analysis } from "@/models/Analysis";
 import { ExportRecord } from "@/models/Export";
 import { Resume } from "@/models/Resume";
 import { AppShell } from "@/components/layout/app-shell";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { ProfileClient } from "@/components/profile/profile-client";
 
 export default async function ProfilePage() {
@@ -99,7 +98,6 @@ export default async function ProfilePage() {
               Admin
             </Link>
           )}
-          <LogoutButton />
         </>
       }
     >

@@ -3,10 +3,9 @@ import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { getUserUsageSummary } from "@/lib/usage";
+import { AppShell } from "@/components/layout/app-shell";
 import { AnalysisFlow } from "@/components/dashboard/analysis-flow";
 import { PulseStack } from "@/components/dashboard/pulse-stack";
-import { AppShell } from "@/components/layout/app-shell";
-import { LogoutButton } from "@/components/auth/logout-button";
 
 export default async function DashboardPage({
   searchParams,
@@ -45,7 +44,6 @@ export default async function DashboardPage({
           >
             Profile
           </Link>
-          <LogoutButton />
         </>
       }
     >
@@ -72,14 +70,15 @@ export default async function DashboardPage({
           />
         </div>
 
-        {justRegistered && dailyAllowance === 0 && (
+        {justRegistered && (
           <div className="mt-12 rounded-3xl border border-[#00C2FF]/35 bg-[#101820] px-5 py-5">
             <p className="font-[family-name:var(--font-editorial)] text-2xl italic">
               Thanks for registering
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65 sm:text-base">
-              An admin will assign your daily uses. Please check back later before
-              uploading a resume.
+              You start with 2 daily uses. An admin can provide more as long as
+              free AI capacity remains. Uses reset daily, so check back after
+              the daily reset if you run out.
             </p>
           </div>
         )}
