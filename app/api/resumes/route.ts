@@ -118,6 +118,7 @@ export async function POST(request: Request) {
     const resume = await Resume.create({
       userId: session.user.id,
       originalFilename: file.name,
+      title: file.name,
       storageKey,
       mimeType: DOCX_MIME,
       sizeBytes: file.size,
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: String(resume._id),
       originalFilename: resume.originalFilename,
+      title: resume.title || resume.originalFilename,
       sizeBytes: resume.sizeBytes,
       status: resume.status,
       structured: resume.structured,

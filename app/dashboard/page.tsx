@@ -39,6 +39,12 @@ export default async function DashboardPage({
               Admin
             </Link>
           )}
+          <Link
+            href="/profile"
+            className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
+          >
+            Profile
+          </Link>
           <LogoutButton />
         </>
       }
@@ -47,7 +53,7 @@ export default async function DashboardPage({
         <div className="grid items-end gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="animate-in fade-in slide-in-from-left-4 duration-700">
             <p className="mb-4 inline-flex rounded-full border border-[#7CFFB2]/40 bg-[#7CFFB2]/10 px-3 py-1 text-xs font-medium tracking-[0.2em] text-[#7CFFB2] uppercase">
-              Your workspace
+              Rez Desk
             </p>
             <h1 className="font-[family-name:var(--font-editorial)] text-5xl leading-[0.92] font-medium tracking-tight sm:text-6xl md:text-7xl">
               Hey{" "}

@@ -36,11 +36,29 @@ export async function PATCH(
     return NextResponse.json({ error: "Recommendations not found" }, { status: 404 });
   }
 
+  if (set.appliedAt) {
+    return NextResponse.json(
+      { error: "Recommendations already applied and are locked" },
+      { status: 400 }
+    );
+  }
+
   const item = set.items.find(
     (entry: RecommendationItemFields) => entry.itemId === parsed.data.itemId
   );
   if (!item) {
     return NextResponse.json({ error: "Recommendation not found" }, { status: 404 });
+  }
+
+  if (
+    item.decision !== "pending" &&
+    parsed.data.decision !== "pending" &&
+    item.decision !== parsed.data.decision
+  ) {
+    return NextResponse.json(
+      { error: "Clear this decision before choosing again" },
+      { status: 400 }
+    );
   }
 
   item.decision = parsed.data.decision;

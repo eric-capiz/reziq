@@ -5,7 +5,7 @@ import { connectDB } from "@/lib/db";
 import { buildDocxBuffer } from "@/lib/export-docx";
 import { buildPdfBuffer } from "@/lib/export-pdf";
 import type { StructuredResume } from "@/lib/resume-extract";
-import { uploadResumeObject } from "@/lib/r2";
+import { getResumeObjectBuffer, uploadResumeObject } from "@/lib/r2";
 import { Analysis } from "@/models/Analysis";
 import { ExportRecord } from "@/models/Export";
 import { Resume } from "@/models/Resume";
@@ -15,6 +15,10 @@ export const maxDuration = 60;
 const querySchema = z.object({
   format: z.enum(["docx", "pdf"]),
   analysisId: z.string().optional(),
+  reuse: z
+    .enum(["0", "1", "true", "false"])
+    .optional()
+    .transform((value) => value === "1" || value === "true"),
 });
 
 function slugifyName(name: string) {
@@ -73,6 +77,35 @@ export async function GET(
     return NextResponse.json({ error: "Resume not found" }, { status: 404 });
   }
 
+  const contentType =
+    parsed.data.format === "docx"
+      ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      : "application/pdf";
+
+  if (parsed.data.reuse) {
+    const existing = await ExportRecord.findOne({
+      resumeId: resume._id,
+      userId: session.user.id,
+      format: parsed.data.format,
+    }).sort({ createdAt: -1 });
+
+    if (existing) {
+      try {
+        const buffer = await getResumeObjectBuffer(existing.storageKey);
+        return new NextResponse(new Uint8Array(buffer), {
+          status: 200,
+          headers: {
+            "Content-Type": contentType,
+            "Content-Disposition": `attachment; filename="${existing.filename}"`,
+            "Cache-Control": "no-store",
+          },
+        });
+      } catch (error) {
+        console.error("Stored export read failed, regenerating", error);
+      }
+    }
+  }
+
   let analysisId: string | null = null;
   if (parsed.data.analysisId) {
     const analysis = await Analysis.findOne({
@@ -99,13 +132,14 @@ export async function GET(
         : await buildPdfBuffer(structured);
 
     const stamp = Date.now();
-    const safeName = slugifyName(structured.contact.name || "resume");
+    const displayName =
+      resume.title ||
+      structured.contact.name ||
+      resume.originalFilename ||
+      "resume";
+    const safeName = slugifyName(displayName);
     const filename = `${safeName}-reziq.${parsed.data.format}`;
     const storageKey = `exports/${session.user.id}/${id}/${stamp}.${parsed.data.format}`;
-    const contentType =
-      parsed.data.format === "docx"
-        ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        : "application/pdf";
 
     await uploadResumeObject({
       key: storageKey,

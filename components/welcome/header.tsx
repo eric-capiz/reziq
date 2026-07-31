@@ -37,7 +37,16 @@ export function WelcomeHeader() {
                   className="rounded-full bg-[#7CFFB2] text-[#0B0F14] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_8px_24px_rgba(124,255,178,0.35)]"
                   onClick={() => router.push("/dashboard")}
                 >
-                  Dashboard
+                  Rez Desk
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:text-white"
+                  onClick={() => router.push("/profile")}
+                >
+                  Profile
                 </Button>
                 <Button
                   type="button"
@@ -45,7 +54,9 @@ export function WelcomeHeader() {
                   size="sm"
                   className="rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:text-white"
                   onClick={() => {
-                    void signOut({ callbackUrl: "/" });
+                    void signOut({
+                      callbackUrl: `${window.location.origin}/`,
+                    });
                   }}
                 >
                   Log out

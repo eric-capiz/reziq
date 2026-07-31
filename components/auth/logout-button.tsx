@@ -17,7 +17,11 @@ export function LogoutButton({
         className ??
         "rounded-full text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 hover:text-white"
       }
-      onClick={() => signOut({ callbackUrl: "/" })}
+      onClick={() => {
+        void signOut({
+          callbackUrl: `${window.location.origin}/`,
+        });
+      }}
     >
       Log out
     </Button>

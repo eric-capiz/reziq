@@ -29,10 +29,16 @@ export const recommendationItemSchema = z.object({
   resumeEvidence: z.string().min(1),
 });
 
+export const adviceItemSchema = z.object({
+  topic: z.string().min(1),
+  detail: z.string().min(1),
+});
+
 export const recommendationResultSchema = z.object({
   alreadyStrong: z.boolean().default(false),
   statusNote: z.string().default(""),
   diyAdvice: z.string().default(""),
+  advice: z.array(adviceItemSchema).max(10).default([]),
   recommendations: z.array(recommendationItemSchema).max(6).default([]),
 });
 

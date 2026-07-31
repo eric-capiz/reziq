@@ -61,6 +61,18 @@ const RecommendationSetSchema = new Schema(
       type: String,
       default: "",
     },
+    advice: {
+      type: [
+        new Schema(
+          {
+            topic: { type: String, default: "" },
+            detail: { type: String, default: "" },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
     items: {
       type: [RecommendationItemSchema],
       default: [],

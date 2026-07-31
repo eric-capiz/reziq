@@ -28,6 +28,13 @@ export async function POST(
     return NextResponse.json({ error: "Recommendations not found" }, { status: 404 });
   }
 
+  if (set.appliedAt) {
+    return NextResponse.json(
+      { error: "Accepted changes were already applied" },
+      { status: 400 }
+    );
+  }
+
   const accepted = set.items.filter(
     (item: RecommendationItemFields) => item.decision === "accepted"
   );

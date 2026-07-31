@@ -15,7 +15,13 @@ export default function HomePage() {
       <footer className="border-t border-white/10 bg-[#0B0F14] px-4 py-10 text-center text-sm text-white/55 sm:px-6">
         <p>RezIQ helps you improve resumes with evidence, not invented experience.</p>
         <p className="mt-2">
-          © {new Date().getFullYear()} · Developed by{" "}
+          <a
+            href="/privacy"
+            className="text-white/60 underline-offset-4 transition-colors duration-200 hover:text-[#7CFFB2] hover:underline"
+          >
+            Privacy
+          </a>
+          {" · "}© {new Date().getFullYear()} · Developed by{" "}
           <a
             href="https://www.ericcapiz.com"
             target="_blank"

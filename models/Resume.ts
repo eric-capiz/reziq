@@ -63,6 +63,11 @@ const ResumeSchema = new Schema(
       type: String,
       required: true,
     },
+    title: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     storageKey: {
       type: String,
       required: true,

@@ -54,6 +54,7 @@ Return ONLY valid JSON matching this shape:
   "alreadyStrong": boolean,
   "statusNote": string,
   "diyAdvice": string,
+  "advice": [{ "topic": string, "detail": string }],
   "recommendations": [
     {
       "section": "summary" | "experience" | "skills" | "education" | "other",
@@ -67,19 +68,23 @@ Return ONLY valid JSON matching this shape:
   ]
 }
 
-Rules:
-* Never invent jobs, skills, metrics, degrees, certifications, employers, or achievements.
-* Only rephrase, reorder emphasis, or surface wording already supported by resumeEvidence.
-* Return 0 to 6 recommendations. Do not pad. Empty recommendations is valid.
-* If the resume already fits well, set alreadyStrong true, explain in statusNote, and give optional diyAdvice the user can do themselves.
-* targetPath examples: "summary", "skills", "experience.0.bullets.1", "experience.0.title"
-* proposedText must be the full replacement text for that path.
-* For skills, proposedText should be a comma separated list of skills drawn only from existing resume content and honest reframing of those skills.
-* Tie each rationale to the job needs without claiming experience the resume does not support.`,
+Hard rules:
+* NEVER invent jobs, skills, tools, frameworks, metrics, degrees, certifications, employers, or achievements.
+* If the job asks for a skill that is NOT on the resume (example: GraphQL), do NOT add it to summary, skills, or bullets.
+* Put missing job skills or qualifications into "advice" instead, so the user can decide whether they honestly have that experience.
+* recommendations are ONLY for light keyword alignment and clearer wording of experience already on the resume.
+* Prefer experience bullet rewrites and summary emphasis changes when the resume already supports them.
+* Do not force changes. 0 recommendations is valid.
+* Do not pad. Return at most 6 recommendations.
+* For skills section edits: only reorder, group, or rephrase skills already present. Never append new skills.
+* proposedText must be fully supported by resumeEvidence from the resume JSON.
+* targetPath examples: "summary", "skills", "experience.0.bullets.1", "experience.0.title"`,
     },
     {
       role: "user",
       content: `Create improvement recommendations for this Strong or Possible fit.
+
+Missing job requirements must go in advice, not recommendations.
 
 RESUME_JSON:
 ${input.resumeJson}

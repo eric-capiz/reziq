@@ -53,7 +53,7 @@ export function WelcomeHero() {
                     className="rounded-full bg-[#7CFFB2] text-[#0B0F14] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_10px_30px_rgba(124,255,178,0.35)]"
                     onClick={() => router.push("/dashboard")}
                   >
-                    Open dashboard
+                    Open Rez Desk
                   </Button>
                 ) : (
                   <Button

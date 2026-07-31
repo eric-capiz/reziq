@@ -92,6 +92,7 @@ type RecommendationSetState = {
   alreadyStrong: boolean;
   statusNote: string;
   diyAdvice: string;
+  advice: Array<{ topic: string; detail: string }>;
   items: RecommendationItem[];
   appliedAt: string | null;
 };
@@ -251,7 +252,6 @@ export function AnalysisFlow({
       setRecommendationSet(null);
       setStructuredDraft(null);
       toast.success("Resume uploaded and structured");
-      setStep(1);
     });
   }
 
@@ -285,7 +285,6 @@ export function AnalysisFlow({
       setRecommendationSet(null);
       setStructuredDraft(null);
       toast.success("Job description saved and structured");
-      setStep(2);
     });
   }
 
@@ -363,7 +362,7 @@ export function AnalysisFlow({
     });
   }
 
-  async function loadRecommendations() {
+  async function loadRecommendations(force = false) {
     if (!analysis?.id) return;
     if (analysis.verdict === "poor") {
       toast.message("Poor fit results do not include rewrite recommendations");
@@ -373,9 +372,11 @@ export function AnalysisFlow({
     setLoadingRecs(true);
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/analyses/${analysis.id}/recommendations`, {
-          method: "POST",
-        });
+        const params = force ? "?force=1" : "";
+        const res = await fetch(
+          `/api/analyses/${analysis.id}/recommendations${params}`,
+          { method: "POST" }
+        );
         const data = await res.json();
         if (!res.ok) {
           toast.error(data.error ?? "Could not get recommendations");
@@ -387,6 +388,7 @@ export function AnalysisFlow({
           alreadyStrong: data.set.alreadyStrong,
           statusNote: data.set.statusNote,
           diyAdvice: data.set.diyAdvice,
+          advice: data.set.advice ?? [],
           items: data.set.items ?? [],
           appliedAt: data.set.appliedAt,
         });
@@ -919,7 +921,7 @@ export function AnalysisFlow({
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
                   For Strong or Possible fits only. Suggestions never invent
-                  experience. Accept or reject each one, then apply.
+                  experience. Missing job skills show up as advice, not rewrites.
                 </p>
               </div>
               <span className="font-[family-name:var(--font-editorial)] text-5xl italic text-[#FF5C35] sm:text-6xl">
@@ -962,7 +964,7 @@ export function AnalysisFlow({
                   type="button"
                   className="mt-5 rounded-full bg-[#FF5C35] px-5 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ff7a57] hover:shadow-[0_12px_30px_rgba(255,92,53,0.35)]"
                   disabled={pending || loadingRecs}
-                  onClick={loadRecommendations}
+                  onClick={() => loadRecommendations(false)}
                 >
                   Get recommendations
                 </Button>
@@ -983,15 +985,48 @@ export function AnalysisFlow({
                       {recommendationSet.statusNote ||
                         "Your resume already looks strong for this role. No forced rewrites."}
                     </p>
+                  </div>
+                )}
+
+                {(recommendationSet.advice?.length > 0 ||
+                  recommendationSet.diyAdvice) && (
+                  <div className="rounded-3xl border border-[#00C2FF]/30 bg-[#0D1820] p-5">
+                    <p className="text-xs font-semibold tracking-[0.16em] text-[#00C2FF] uppercase">
+                      Advice
+                    </p>
+                    <p className="mt-2 text-sm text-white/65">
+                      Job skills or quals not found on your resume stay here.
+                      Add them yourself only if you honestly have the experience.
+                    </p>
                     {recommendationSet.diyAdvice ? (
-                      <p className="mt-3 text-sm text-white/60">
-                        Optional DIY: {recommendationSet.diyAdvice}
+                      <p className="mt-3 text-sm text-white/70">
+                        {recommendationSet.diyAdvice}
                       </p>
+                    ) : null}
+                    {recommendationSet.advice?.length ? (
+                      <ul className="mt-4 space-y-3">
+                        {recommendationSet.advice.map((entry, index) => (
+                          <li
+                            key={`${entry.topic}-${index}`}
+                            className="rounded-2xl border border-white/10 bg-white/5 p-3"
+                          >
+                            <p className="text-sm font-medium text-white">
+                              {entry.topic}
+                            </p>
+                            <p className="mt-1 text-sm text-white/65">
+                              {entry.detail}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
                     ) : null}
                   </div>
                 )}
 
-                {recommendationSet.items.map((item) => (
+                {recommendationSet.items.map((item) => {
+                  const locked = Boolean(recommendationSet.appliedAt);
+                  const decided = item.decision !== "pending";
+                  return (
                   <article
                     key={item.itemId}
                     className="rounded-3xl border border-white/10 bg-[#0B0F14]/60 p-5"
@@ -1034,7 +1069,7 @@ export function AnalysisFlow({
                         type="button"
                         size="sm"
                         className="rounded-full bg-[#7CFFB2] text-[#0B0F14] hover:bg-white"
-                        disabled={pending}
+                        disabled={pending || locked || decided}
                         onClick={() => setDecision(item.itemId, "accepted")}
                       >
                         Accept
@@ -1043,7 +1078,7 @@ export function AnalysisFlow({
                         type="button"
                         size="sm"
                         className="rounded-full border border-white/20 bg-white/5 text-white hover:bg-white/10"
-                        disabled={pending}
+                        disabled={pending || locked || decided}
                         onClick={() => setDecision(item.itemId, "rejected")}
                       >
                         Reject
@@ -1053,16 +1088,24 @@ export function AnalysisFlow({
                         size="sm"
                         variant="ghost"
                         className="rounded-full text-white/60 hover:bg-white/10 hover:text-white"
-                        disabled={pending}
+                        disabled={pending || locked || !decided}
                         onClick={() => setDecision(item.itemId, "pending")}
                       >
                         Clear
                       </Button>
                     </div>
                   </article>
-                ))}
+                  );
+                })}
 
-                {recommendationSet.items.some((item) => item.decision === "accepted") ? (
+                {recommendationSet.appliedAt ? (
+                  <p className="text-sm text-[#7CFFB2]">
+                    Accepted changes applied. Recommendations are locked for this
+                    analysis.
+                  </p>
+                ) : recommendationSet.items.some(
+                    (item) => item.decision === "accepted"
+                  ) ? (
                   <Button
                     type="button"
                     className="rounded-full bg-white px-5 text-[#0B0F14] hover:bg-[#7CFFB2]"
@@ -1070,6 +1113,18 @@ export function AnalysisFlow({
                     onClick={applyAccepted}
                   >
                     Apply accepted changes
+                  </Button>
+                ) : null}
+
+                {!recommendationSet.appliedAt ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="rounded-full text-white/60 hover:bg-white/10 hover:text-white"
+                    disabled={pending || loadingRecs}
+                    onClick={() => loadRecommendations(true)}
+                  >
+                    Refresh recommendations
                   </Button>
                 ) : null}
               </div>

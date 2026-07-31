@@ -13,7 +13,8 @@ export function WelcomePurpose() {
           <div className="mt-8 grid gap-6 text-base leading-relaxed text-slate-600 sm:grid-cols-2 sm:text-lg">
             <p>
               Paste a job description, upload a DOCX, and get a Strong, Possible,
-              or Poor fit verdict with receipts from your own experience.
+              or Poor fit verdict with receipts from your own experience. That
+              work happens in Rez Desk after you join.
             </p>
             <p>
               If you are far off, we stop at the gaps. If you are close, you

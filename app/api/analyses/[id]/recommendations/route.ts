@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { runRecommendations } from "@/lib/ai/service";
+import { sanitizeRecommendationResult } from "@/lib/sanitize-recommendations";
 import { Analysis } from "@/models/Analysis";
 import { JobInput } from "@/models/JobInput";
 import { RecommendationSet } from "@/models/RecommendationSet";
@@ -16,6 +17,7 @@ function publicSet(doc: {
   alreadyStrong: boolean;
   statusNote: string;
   diyAdvice: string;
+  advice?: Array<{ topic?: string; detail?: string }>;
   items: unknown[];
   appliedAt?: Date | null;
 }) {
@@ -25,6 +27,7 @@ function publicSet(doc: {
     alreadyStrong: doc.alreadyStrong,
     statusNote: doc.statusNote,
     diyAdvice: doc.diyAdvice,
+    advice: doc.advice ?? [],
     items: doc.items,
     appliedAt: doc.appliedAt ?? null,
   };
@@ -52,7 +55,7 @@ export async function GET(
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
@@ -61,6 +64,10 @@ export async function POST(
   }
 
   const { id } = await context.params;
+  const force =
+    new URL(request.url).searchParams.get("force") === "1" ||
+    new URL(request.url).searchParams.get("force") === "true";
+
   await connectDB();
 
   const analysis = await Analysis.findOne({
@@ -86,8 +93,11 @@ export async function POST(
     analysisId: analysis._id,
     userId: session.user.id,
   });
-  if (existing) {
+  if (existing && !force) {
     return NextResponse.json({ set: publicSet(existing), cached: true });
+  }
+  if (existing && force) {
+    await existing.deleteOne();
   }
 
   const resume = await Resume.findOne({
@@ -116,16 +126,23 @@ export async function POST(
       },
     });
 
+    const sanitized = sanitizeRecommendationResult(
+      result,
+      resume.structured as never,
+      job.structured as never
+    );
+
     const set = await RecommendationSet.create({
       userId: session.user.id,
       analysisId: analysis._id,
       resumeId: resume._id,
       jobId: job._id,
-      alreadyStrong: result.alreadyStrong,
-      statusNote: result.statusNote,
-      diyAdvice: result.diyAdvice,
+      alreadyStrong: sanitized.alreadyStrong,
+      statusNote: sanitized.statusNote,
+      diyAdvice: sanitized.diyAdvice,
+      advice: sanitized.advice,
       provider,
-      items: result.recommendations.slice(0, 6).map((item) => ({
+      items: sanitized.recommendations.slice(0, 6).map((item) => ({
         itemId: nanoid(),
         section: item.section,
         targetPath: item.targetPath,

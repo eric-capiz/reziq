@@ -71,3 +71,4 @@ venv/
 *.log
 *.local
 .turbo/
+.env*

@@ -19,7 +19,7 @@ Connect MongoDB and define collections or schemas for users, resumes, job inputs
 * MongoDB connection is working
 * User model is live with unique username and email, roles, and daily usage fields
 * AiProviderDaily model tracks provider requests, tokens, exhausted state, and last activity
-* Resume model stores R2 key, extraction status, structured content, and optional structuredDraft
+* Resume model stores R2 key, extraction status, structured content, optional structuredDraft, and editable title
 * JobInput and Analysis models are live with evidence fields and cache friendly indexes
 * RecommendationSet model stores up to six items with accept or reject decisions per analysis
 * ExportRecord model stores format, source, R2 key, and filename per generated download
@@ -195,13 +195,23 @@ Generate a new ATS friendly resume from the updated structured content. Allow do
 
 Let users view their past uploads, job inputs, fit verdicts, recommendation decisions, and exports. Support deleting a resume or analysis and its stored files.
 
-**Status: Not started**
+**Status: Done**
+* Profile page at /profile lists saved resumes
+* Resume title defaults to uploaded filename and can be renamed
+* Redownload DOCX or PDF prefers the latest stored export, otherwise generates from draft or structured content
+* Delete resume cascades R2 files, jobs, analyses, recommendations, and exports
+* Delete account requires typing delete, warns that everything is wiped and a new account is required, then removes all user data
+* Dashboard and welcome header link to Profile
 
 ## Slice 19: Privacy and deletion hardening
 
 Add privacy page copy, provider disclosure, delete account or delete data flows as appropriate, and logging rules that avoid storing full resume text in normal logs.
 
-**Status: Not started**
+**Status: Done for current stage**
+* Public /privacy page covers storage, AI providers (Groq, Cerebras, Gemini Flash Lite), retention, deletion, and logging stance
+* Privacy link in welcome footer and app shell footer
+* Delete account and cascade delete live on the profile page
+* Normal logs should avoid full resume text; errors stay technical only
 
 ## Slice 20: Usage metering refinement
 

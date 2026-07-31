@@ -56,7 +56,13 @@ export function AppShell({
 
       <footer className="relative z-10 mt-auto border-t border-white/10 px-4 py-6 text-center text-sm text-white/45 sm:px-6">
         <p>
-          © {new Date().getFullYear()} · Developed by{" "}
+          <Link
+            href="/privacy"
+            className="text-white/60 underline-offset-4 transition-colors duration-200 hover:text-[#7CFFB2] hover:underline"
+          >
+            Privacy
+          </Link>
+          {" · "}© {new Date().getFullYear()} · Developed by{" "}
           <a
             href="https://www.ericcapiz.com"
             target="_blank"

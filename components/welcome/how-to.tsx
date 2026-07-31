@@ -27,10 +27,11 @@ export function WelcomeHowTo() {
       <div className="mx-auto w-full max-w-6xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="font-[family-name:var(--font-editorial)] text-3xl italic sm:text-5xl">
-            Four beats
+            Four beats in Rez Desk
           </h2>
           <p className="max-w-sm text-sm text-white/60 sm:text-base">
-            A tight loop from upload to export. No fake scoreboards.
+            Rez Desk is your workspace: a tight loop from upload to export. No
+            fake scoreboards.
           </p>
         </div>
 

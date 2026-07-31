@@ -48,7 +48,7 @@ export default async function AdminPage() {
           href="/dashboard"
           className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
         >
-          Back to dashboard
+          Back to Rez Desk
         </Link>
       }
     >

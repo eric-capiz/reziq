@@ -6,6 +6,7 @@ import { runFitAnalysis } from "@/lib/ai/service";
 import { consumeSuccessfulAnalysis, getUserUsageSummary } from "@/lib/usage";
 import { Analysis } from "@/models/Analysis";
 import { JobInput } from "@/models/JobInput";
+import { RecommendationSet } from "@/models/RecommendationSet";
 import { Resume } from "@/models/Resume";
 
 export const maxDuration = 60;
@@ -100,6 +101,10 @@ export async function POST(request: Request) {
     });
   }
   if (existing && parsed.data.force) {
+    await RecommendationSet.deleteMany({
+      analysisId: existing._id,
+      userId: session.user.id,
+    });
     await existing.deleteOne();
   }
 
