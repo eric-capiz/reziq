@@ -50,6 +50,32 @@ The product is an AI career assistant, not a generic AI resume writer. Feedback 
 3. Run `npm run dev`
 4. Open the app, register or log in, and use Rez Desk
 
+## Future features
+
+### Usage clarity
+
+Show remaining daily uses, when the next reset happens, and a short note on what counts as a use. This should cut confusion around metering without changing how analysis charges work.
+
+### Export polish presets
+
+Offer a few ATS safe layout presets such as classic or compact, plus simple section order choices. Exports stay newly generated templates, not surgical edits of the original file.
+
+### Version history
+
+Let users compare an earlier resume version with the draft after accepted recommendations. A short change summary helps students and coaches see what moved.
+
+### Cover letter
+
+After a Strong or Possible fit, users will generate a short cover letter from the job description and their approved resume content. The letter will stay evidence based and will not invent experience, skills, or achievements. Users will review and edit before export.
+
+### PDF upload
+
+Users will upload resumes as PDF in addition to DOCX. RezIQ will extract text, structure the same sections used today, and run the full fit analysis and recommendation flow. Download will stay available as DOCX or PDF.
+
+### Resume from scratch
+
+Users paste a job description first, answer contact and history questions, and confirm skills with checkboxes for what they truly have. RezIQ generates a draft only from confirmed facts, then runs the normal fit analysis so honesty stays intact.
+
 ## Status
 
-MVP core flow is implemented through polish and metering refinements. Remaining work is optional v2 scope such as PDF upload, job URL import, and school SSO.
+MVP core flow is implemented through polish and metering refinements. Optional later work includes the future features above, plus items such as job URL import and school SSO.
