@@ -86,7 +86,7 @@ export function AuthModal({
 
       onOpenChange(false);
       router.refresh();
-      router.push(mode === "register" ? "/dashboard?welcome=1" : "/dashboard");
+      router.push("/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

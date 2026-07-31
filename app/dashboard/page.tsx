@@ -7,11 +7,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { AnalysisFlow } from "@/components/dashboard/analysis-flow";
 import { PulseStack } from "@/components/dashboard/pulse-stack";
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ welcome?: string }>;
-}) {
+export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) {
     redirect("/");
@@ -23,8 +19,6 @@ export default async function DashboardPage({
   const usesUsedToday = usage?.usesUsedToday ?? 0;
   const remainingUses = usage?.remainingUses ?? 0;
   const canUpload = remainingUses > 0;
-  const params = await searchParams;
-  const justRegistered = params.welcome === "1";
 
   return (
     <AppShell
@@ -69,19 +63,6 @@ export default async function DashboardPage({
             dailyAllowance={dailyAllowance}
           />
         </div>
-
-        {justRegistered && (
-          <div className="mt-12 rounded-3xl border border-[#00C2FF]/35 bg-[#101820] px-5 py-5">
-            <p className="font-[family-name:var(--font-editorial)] text-2xl italic">
-              Thanks for registering
-            </p>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65 sm:text-base">
-              You start with 2 daily uses. An admin can provide more as long as
-              free AI capacity remains. Uses reset daily, so check back after
-              the daily reset if you run out.
-            </p>
-          </div>
-        )}
 
         <div className="mt-14">
           <AnalysisFlow
