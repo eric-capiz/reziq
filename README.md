@@ -45,7 +45,7 @@ The product is an AI career assistant, not a generic AI resume writer. Feedback 
 
 ## Local setup
 
-1. Copy env values for Auth, MongoDB, AI keys, R2, and optional admin seed
+1. Copy env values for Auth, MongoDB, AI keys, R2, and optional admin seed. Set `AUTH_URL` (or `NEXT_PUBLIC_SITE_URL`) to your public site URL so sitemap, robots, and social previews use the correct domain.
 2. Install packages with `npm install`
 3. Run `npm run dev`
 4. Open the app, register or log in, and use Rez Desk

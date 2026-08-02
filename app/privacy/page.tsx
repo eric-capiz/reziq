@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+
+export const metadata: Metadata = {
+  title: "Privacy",
+  description:
+    "How RezIQ stores resume data, what we use it for, and how you can delete your account and files.",
+  alternates: {
+    canonical: "/privacy",
+  },
+};
 
 export default function PrivacyPage() {
   return (

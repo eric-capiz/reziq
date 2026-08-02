@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
@@ -6,6 +7,14 @@ import { ExportRecord } from "@/models/Export";
 import { Resume } from "@/models/Resume";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProfileClient } from "@/components/profile/profile-client";
+
+export const metadata: Metadata = {
+  title: "Profile",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function ProfilePage() {
   const session = await auth();

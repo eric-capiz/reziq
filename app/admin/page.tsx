@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
@@ -6,6 +7,14 @@ import { getAiAdminStats } from "@/lib/ai-status";
 import { getRemainingUses, syncUserDailyUsage } from "@/lib/usage";
 import { AdminDashboardClient } from "@/components/admin/admin-dashboard-client";
 import { AppShell } from "@/components/layout/app-shell";
+
+export const metadata: Metadata = {
+  title: "Admin",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function AdminPage() {
   const session = await auth();

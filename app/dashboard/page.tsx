@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
@@ -5,6 +6,14 @@ import { getUserUsageSummary } from "@/lib/usage";
 import { AppShell } from "@/components/layout/app-shell";
 import { AnalysisFlow } from "@/components/dashboard/analysis-flow";
 import { PulseStack } from "@/components/dashboard/pulse-stack";
+
+export const metadata: Metadata = {
+  title: "Rez Desk",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function DashboardPage() {
   const session = await auth();

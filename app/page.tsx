@@ -1,12 +1,48 @@
+import type { Metadata } from "next";
 import { WelcomeHeader } from "@/components/welcome/header";
 import { WelcomeHero } from "@/components/welcome/hero";
 import { WelcomePurpose } from "@/components/welcome/purpose";
 import { WelcomeHowTo } from "@/components/welcome/how-to";
 import { WelcomeCallouts } from "@/components/welcome/callouts";
+import { getSiteUrl } from "@/lib/site-url";
+
+export const metadata: Metadata = {
+  title: "RezIQ | Evidence based AI resume fit analysis",
+  description:
+    "Upload a DOCX resume, paste a job description, and get Strong, Possible, or Poor fit with evidence. Honest recommendations and clean DOCX or PDF exports.",
+  alternates: {
+    canonical: "/",
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "RezIQ",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  description:
+    "Free AI resume analysis that compares your resume to a job description with evidence based fit feedback and honest recommendations.",
+  url: getSiteUrl(),
+  author: {
+    "@type": "Person",
+    name: "Eric Capiz",
+    url: "https://www.ericcapiz.com",
+  },
+};
 
 export default function HomePage() {
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <WelcomeHeader />
       <WelcomeHero />
       <WelcomePurpose />
