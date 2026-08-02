@@ -63,7 +63,7 @@ export async function POST(
       }))
     );
 
-    resume.structuredDraft = draft;
+    resume.structuredDraft = draft as typeof resume.structured;
     await resume.save();
     set.appliedAt = new Date();
     await set.save();

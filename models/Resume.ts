@@ -1,4 +1,10 @@
-import { Schema, models, model, type InferSchemaType } from "mongoose";
+import {
+  Schema,
+  models,
+  model,
+  type InferSchemaType,
+  type Model,
+} from "mongoose";
 
 const ContactSchema = new Schema(
   {
@@ -124,20 +130,21 @@ const ResumeSchema = new Schema(
 
 export type ResumeFields = InferSchemaType<typeof ResumeSchema>;
 
-function getResumeModel() {
-  const existing = models.Resume;
-  if (existing) {
-    if (!existing.schema.path("postingTitle")) {
-      existing.schema.add({
-        postingTitle: { type: String, default: "", trim: true },
-        postingCompany: { type: String, default: "", trim: true },
-        postingUrl: { type: String, default: "", trim: true },
-      });
-    }
-    return existing;
+function ensurePostingPaths(resumeModel: Model<ResumeFields>) {
+  if (!resumeModel.schema.path("postingTitle")) {
+    resumeModel.schema.add({
+      postingTitle: { type: String, default: "", trim: true },
+      postingCompany: { type: String, default: "", trim: true },
+      postingUrl: { type: String, default: "", trim: true },
+    });
   }
-  return model("Resume", ResumeSchema);
 }
 
-export const Resume = getResumeModel();
+export const Resume: Model<ResumeFields> = (() => {
+  const resumeModel =
+    (models.Resume as Model<ResumeFields> | undefined) ??
+    model<ResumeFields>("Resume", ResumeSchema);
+  ensurePostingPaths(resumeModel);
+  return resumeModel;
+})();
 
