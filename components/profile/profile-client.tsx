@@ -28,6 +28,30 @@ const verdictLabel: Record<string, string> = {
   poor: "Poor fit",
 };
 
+function csvCell(value: string) {
+  const text = value ?? "";
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+function buildJobPostingsCsv(
+  rows: Array<{ postingTitle: string; postingCompany: string; postingUrl: string }>
+) {
+  const lines = ["Job title,Company,Posting link"];
+  for (const row of rows) {
+    lines.push(
+      [
+        csvCell(row.postingTitle),
+        csvCell(row.postingCompany),
+        csvCell(row.postingUrl),
+      ].join(",")
+    );
+  }
+  return `${lines.join("\n")}\n`;
+}
+
 export function ProfileClient({
   username,
   email,
@@ -172,6 +196,39 @@ export function ProfileClient({
     });
   }
 
+  function exportJobPostings() {
+    const rows = resumes
+      .map((resume) => {
+        const draft = postingDrafts[resume.id];
+        return {
+          postingTitle: (draft?.postingTitle ?? resume.postingTitle).trim(),
+          postingCompany: (draft?.postingCompany ?? resume.postingCompany).trim(),
+          postingUrl: (draft?.postingUrl ?? resume.postingUrl).trim(),
+        };
+      })
+      .filter(
+        (row) => row.postingTitle || row.postingCompany || row.postingUrl
+      );
+
+    if (rows.length === 0) {
+      toast.error("No job posting details to export yet");
+      return;
+    }
+
+    const csv = buildJobPostingsCsv(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    anchor.href = url;
+    anchor.download = `reziq-job-postings-${stamp}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} job posting${rows.length === 1 ? "" : "s"}`);
+  }
+
   function deleteResume(resumeId: string) {
     startTransition(async () => {
       const res = await fetch(`/api/resumes/${resumeId}`, { method: "DELETE" });
@@ -234,14 +291,25 @@ export function ProfileClient({
       </section>
 
       <section className="space-y-4">
-        <div>
-          <h2 className="font-[family-name:var(--font-editorial)] text-3xl italic">
-            Saved resumes
-          </h2>
-          <p className="mt-2 text-sm text-white/55">
-            Each saved resume keeps one job title, company, and posting link.
-            Edit them anytime.
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-[family-name:var(--font-editorial)] text-3xl italic">
+              Saved resumes
+            </h2>
+            <p className="mt-2 text-sm text-white/55">
+              Each saved resume keeps one job title, company, and posting link.
+              Edit them anytime.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-full bg-white/10 text-white hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
+            disabled={pending || resumes.length === 0}
+            onClick={exportJobPostings}
+          >
+            Export job postings CSV
+          </Button>
         </div>
 
         {resumes.length === 0 ? (
