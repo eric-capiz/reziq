@@ -18,7 +18,9 @@ export function WelcomePurpose() {
             </p>
             <p>
               If you are far off, we stop at the gaps. If you are close, you
-              approve every wording change before a new resume is generated.
+              approve every wording change before a new resume is generated. On
+              Profile you can keep one job title, company, and posting link with
+              each saved resume so your hunt stays organized.
             </p>
           </div>
         </div>

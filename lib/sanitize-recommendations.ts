@@ -12,6 +12,16 @@ function normalize(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9.+#]/g, "");
 }
 
+export function stripResumeDashes(text: string) {
+  return text
+    .replace(/[\u2014\u2013]/g, ", ")
+    .replace(/[\-‐‑‒–—―−]/g, " ")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ ?,\s*,+/g, ",")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .trim();
+}
+
 function resumeTextBlob(structured: StructuredLike) {
   return JSON.stringify(structured ?? {}).toLowerCase();
 }
@@ -124,7 +134,7 @@ export function sanitizeRecommendationResult(
           .filter(Boolean);
         const currentNorm = new Set(currentSkills.map(normalize));
         const addedOnlyExisting = kept.filter((s) => !currentNorm.has(normalize(s)));
-        // Reordering / cleanup is fine; inventing new skills is not
+        // Reordering or cleanup is fine; inventing new skills is not
         if (addedOnlyExisting.length > 0) {
           // kept already filtered to resume only, so additions must already exist somewhere on resume
           // Still disallow expanding skills list with terms not already in the skills section
@@ -134,7 +144,7 @@ export function sanitizeRecommendationResult(
             (s) => !skillSectionNorm.has(normalize(s))
           );
           if (illegal.length) {
-            // Only keep skills already in the skills list (reorder/cleanup)
+            // Only keep skills already in the skills list (reorder or cleanup)
             const cleaned = kept.filter((s) => skillSectionNorm.has(normalize(s)));
             if (cleaned.length === 0) return null;
             if (cleaned.map(normalize).join(",") === [...currentNorm].join(",")) {
@@ -142,13 +152,13 @@ export function sanitizeRecommendationResult(
             }
             return {
               ...item,
-              proposedText: cleaned.join(", "),
+              proposedText: stripResumeDashes(cleaned.join(", ")),
             };
           }
         }
         return {
           ...item,
-          proposedText: kept.join(", "),
+          proposedText: stripResumeDashes(kept.join(", ")),
         };
       }
 
@@ -158,7 +168,10 @@ export function sanitizeRecommendationResult(
         jobSkills
       );
       if (invented) return null;
-      return item;
+      return {
+        ...item,
+        proposedText: stripResumeDashes(item.proposedText),
+      };
     })
     .filter(Boolean)
     .slice(0, 6) as RecommendationResult["recommendations"];

@@ -11,12 +11,12 @@ The product is an AI career assistant, not a generic AI resume writer. Feedback 
 ## Core user flow
 
 1. Upload a resume as a DOCX file in Rez Desk
-2. Paste a job description
+2. Paste a job description (optionally add one job title, company, and posting link for Profile tracking)
 3. Review an overall fit verdict (Strong fit, Possible fit, or Poor fit) with evidence
 4. Read evidence based explanations for matches, partial matches, and gaps
 5. If the resume is close enough, accept or reject improvement recommendations (no rewrite suggestions when fit is poor)
 6. Download an updated resume as a new clean ATS friendly DOCX or PDF when improvements were approved
-7. Manage history, titles, redownloads, and account deletion from Profile
+7. Manage history, posting details, titles, redownloads, and account deletion from Profile
 
 ## Product principles
 

@@ -68,6 +68,21 @@ const ResumeSchema = new Schema(
       default: "",
       trim: true,
     },
+    postingTitle: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    postingCompany: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    postingUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     storageKey: {
       type: String,
       required: true,
@@ -109,4 +124,20 @@ const ResumeSchema = new Schema(
 
 export type ResumeFields = InferSchemaType<typeof ResumeSchema>;
 
-export const Resume = models.Resume || model("Resume", ResumeSchema);
+function getResumeModel() {
+  const existing = models.Resume;
+  if (existing) {
+    if (!existing.schema.path("postingTitle")) {
+      existing.schema.add({
+        postingTitle: { type: String, default: "", trim: true },
+        postingCompany: { type: String, default: "", trim: true },
+        postingUrl: { type: String, default: "", trim: true },
+      });
+    }
+    return existing;
+  }
+  return model("Resume", ResumeSchema);
+}
+
+export const Resume = getResumeModel();
+

@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { getUserUsageSummary } from "@/lib/usage";
@@ -21,26 +20,7 @@ export default async function DashboardPage() {
   const canUpload = remainingUses > 0;
 
   return (
-    <AppShell
-      actions={
-        <>
-          {session.user.role === "admin" && (
-            <Link
-              href="/admin"
-              className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
-            >
-              Admin
-            </Link>
-          )}
-          <Link
-            href="/profile"
-            className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
-          >
-            Profile
-          </Link>
-        </>
-      }
-    >
+    <AppShell>
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
         <div className="grid items-end gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="animate-in fade-in slide-in-from-left-4 duration-700">

@@ -7,7 +7,7 @@ const steps = [
   {
     n: "02",
     title: "Paste the posting",
-    body: "No link scraping. You control the exact job text we analyze.",
+    body: "Paste the job text for analysis. Optionally add one title, company, and posting link for Profile tracking. We do not visit the link.",
   },
   {
     n: "03",

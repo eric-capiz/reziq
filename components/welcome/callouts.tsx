@@ -14,6 +14,12 @@ const notes = [
     accent: "bg-[#FF5C35]",
   },
   {
+    label: "History",
+    title: "Track postings on Profile",
+    body: "Optionally save one job title, company, and posting link with each resume. Edit them anytime. RezIQ does not open or scrape the link.",
+    accent: "bg-[#0B0F14]",
+  },
+  {
     label: "Trust",
     title: "Privacy minded",
     body: "No selling data. No RezIQ training on resumes. Delete when you want.",

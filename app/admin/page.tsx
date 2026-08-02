@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
@@ -42,14 +41,6 @@ export default async function AdminPage() {
           <span className="italic text-[#FF5C35]">Rez</span>IQ{" "}
           <span className="text-white/45">Admin</span>
         </>
-      }
-      actions={
-        <Link
-          href="/dashboard"
-          className="inline-flex h-7 items-center rounded-full bg-white/10 px-3 text-[0.8rem] font-medium transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
-        >
-          Back to Rez Desk
-        </Link>
       }
     >
       <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">

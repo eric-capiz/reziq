@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { auth } from "@/lib/auth";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { AppNav } from "@/components/layout/app-nav";
 
 export async function AppShell({
   brandHref = "/",
@@ -19,6 +20,8 @@ export async function AppShell({
   children: ReactNode;
 }) {
   const session = await auth();
+  const isSignedIn = Boolean(session?.user);
+  const isAdmin = session?.user?.role === "admin";
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#0B0F14] text-white">
@@ -47,19 +50,19 @@ export async function AppShell({
       <header className="relative z-10 border-b border-white/10 bg-[#0B0F14]/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <Link
-            href={brandHref}
+            href={isSignedIn && brandHref === "/" ? "/dashboard" : brandHref}
             className="font-[family-name:var(--font-editorial)] text-xl tracking-tight transition-opacity hover:opacity-90"
           >
             {brandLabel}
           </Link>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {actions}
-            {session?.user ? <LogoutButton /> : null}
+            {isSignedIn ? <AppNav isAdmin={isAdmin} /> : actions}
+            {isSignedIn ? <LogoutButton /> : null}
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+      <div className="relative z-10 flex-1 flex flex-col">{children}</div>
 
       <footer className="relative z-10 mt-auto border-t border-white/10 px-4 py-6 text-center text-sm text-white/45 sm:px-6">
         <p>

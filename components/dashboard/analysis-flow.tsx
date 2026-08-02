@@ -169,6 +169,9 @@ export function AnalysisFlow({
   const [file, setFile] = useState<File | null>(null);
   const [resume, setResume] = useState<ResumeState | null>(null);
   const [jobText, setJobText] = useState("");
+  const [postingTitle, setPostingTitle] = useState("");
+  const [postingCompany, setPostingCompany] = useState("");
+  const [postingUrl, setPostingUrl] = useState("");
   const [job, setJob] = useState<JobState | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisState | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -215,6 +218,9 @@ export function AnalysisFlow({
     setResume(null);
     setJob(null);
     setJobText("");
+    setPostingTitle("");
+    setPostingCompany("");
+    setPostingUrl("");
     setAnalysis(null);
     setRecommendationSet(null);
     setStructuredDraft(null);
@@ -274,7 +280,13 @@ export function AnalysisFlow({
       const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId: resume.id, rawText: jobText }),
+        body: JSON.stringify({
+          resumeId: resume.id,
+          rawText: jobText,
+          postingTitle,
+          postingCompany,
+          postingUrl,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -285,7 +297,16 @@ export function AnalysisFlow({
       setAnalysis(null);
       setRecommendationSet(null);
       setStructuredDraft(null);
-      toast.success("Job description saved and structured");
+      const savedBits = [
+        data.postingTitle,
+        data.postingCompany,
+        data.postingUrl,
+      ].filter(Boolean);
+      toast.success(
+        savedBits.length
+          ? "Job saved with posting details for Profile"
+          : "Job description saved and structured"
+      );
     });
   }
 
@@ -301,6 +322,9 @@ export function AnalysisFlow({
       setResume(null);
       setJob(null);
       setJobText("");
+      setPostingTitle("");
+      setPostingCompany("");
+      setPostingUrl("");
       setFile(null);
       setAnalysis(null);
       setRecommendationSet(null);
@@ -725,8 +749,9 @@ export function AnalysisFlow({
                   Paste the posting
                 </h2>
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">
-                  No URL import in MVP. Paste the posting text so we can structure
-                  title, skills, and requirements.
+                  Paste the posting text so we can structure skills and
+                  requirements. Optionally add a title, company, and link for your
+                  Profile history. We do not visit the link.
                 </p>
               </div>
               <span className="font-[family-name:var(--font-editorial)] text-5xl italic text-[#FF5C35] sm:text-6xl">
@@ -740,8 +765,51 @@ export function AnalysisFlow({
               </div>
             ) : (
               <>
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                  <label className="block sm:col-span-1">
+                    <span className="text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                      Job title (optional)
+                    </span>
+                    <input
+                      type="text"
+                      value={postingTitle}
+                      disabled={!canUpload || pending}
+                      onChange={(e) => setPostingTitle(e.target.value)}
+                      placeholder="Optional"
+                      className="mt-2 h-10 w-full rounded-2xl border border-white/15 bg-[#0B0F14] px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/25"
+                    />
+                  </label>
+                  <label className="block sm:col-span-1">
+                    <span className="text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                      Company (optional)
+                    </span>
+                    <input
+                      type="text"
+                      value={postingCompany}
+                      disabled={!canUpload || pending}
+                      onChange={(e) => setPostingCompany(e.target.value)}
+                      placeholder="Optional"
+                      className="mt-2 h-10 w-full rounded-2xl border border-white/15 bg-[#0B0F14] px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/25"
+                    />
+                  </label>
+                  <label className="block sm:col-span-2">
+                    <span className="text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                      Posting link (optional)
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="url"
+                      value={postingUrl}
+                      disabled={!canUpload || pending}
+                      onChange={(e) => setPostingUrl(e.target.value)}
+                      placeholder="Optional https link"
+                      className="mt-2 h-10 w-full rounded-2xl border border-white/15 bg-[#0B0F14] px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/25"
+                    />
+                  </label>
+                </div>
+
                 <textarea
-                  className="mt-7 min-h-44 w-full rounded-3xl border border-white/15 bg-[#0B0F14] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/25"
+                  className="mt-4 min-h-44 w-full rounded-3xl border border-white/15 bg-[#0B0F14] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#00C2FF] focus:ring-2 focus:ring-[#00C2FF]/25"
                   placeholder="Paste the full job description here"
                   value={jobText}
                   disabled={!canUpload || pending}

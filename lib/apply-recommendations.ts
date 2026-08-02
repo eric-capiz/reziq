@@ -1,3 +1,5 @@
+import { stripResumeDashes } from "@/lib/sanitize-recommendations";
+
 export type StructuredResumeLike = {
   contact?: Record<string, unknown>;
   summary?: string;
@@ -29,14 +31,15 @@ export function applyRecommendationPath(
 ): StructuredResumeLike {
   const next = cloneStructured(structured);
   const path = targetPath.trim();
+  const cleanText = stripResumeDashes(proposedText);
 
   if (path === "summary") {
-    next.summary = proposedText;
+    next.summary = cleanText;
     return next;
   }
 
   if (path === "skills") {
-    next.skills = proposedText
+    next.skills = cleanText
       .split(/,|\n/)
       .map((s) => s.trim())
       .filter(Boolean);
@@ -51,7 +54,7 @@ export function applyRecommendationPath(
       throw new Error(`Missing experience at ${path}`);
     }
     const bullets = [...(next.experience[expIndex].bullets ?? [])];
-    bullets[bulletIndex] = proposedText;
+    bullets[bulletIndex] = cleanText;
     next.experience[expIndex] = {
       ...next.experience[expIndex],
       bullets,
@@ -68,7 +71,7 @@ export function applyRecommendationPath(
     }
     next.experience[expIndex] = {
       ...next.experience[expIndex],
-      [field]: proposedText,
+      [field]: cleanText,
     };
     return next;
   }
@@ -82,7 +85,7 @@ export function applyRecommendationPath(
     }
     next.education[eduIndex] = {
       ...next.education[eduIndex],
-      [field]: proposedText,
+      [field]: cleanText,
     };
     return next;
   }

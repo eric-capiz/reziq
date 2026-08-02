@@ -78,6 +78,7 @@ Hard rules:
 * Do not pad. Return at most 6 recommendations.
 * For skills section edits: only reorder, group, or rephrase skills already present. Never append new skills.
 * proposedText must be fully supported by resumeEvidence from the resume JSON.
+* proposedText is resume content. Never use hyphens or dash characters of any kind in proposedText (no ASCII hyphen, en dash, or em dash). Rephrase instead (example: write "full stack" not "full-stack"; write "2020 to 2023" not "2020-2023"; use commas or new sentences instead of dashes).
 * targetPath examples: "summary", "skills", "experience.0.bullets.1", "experience.0.title"`,
     },
     {
