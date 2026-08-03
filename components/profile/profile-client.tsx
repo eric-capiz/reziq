@@ -443,7 +443,11 @@ export function ProfileClient({
                     </Button>
                     {resume.postingUrl ? (
                       <a
-                        href={resume.postingUrl}
+                        href={
+                          /^https?:\/\//i.test(resume.postingUrl.trim())
+                            ? resume.postingUrl.trim()
+                            : `https://${resume.postingUrl.trim()}`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-[#00C2FF] underline-offset-4 hover:underline"

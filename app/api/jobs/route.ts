@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { structureJobText } from "@/lib/job-extract";
-import { normalizePostingUrl } from "@/lib/posting-url";
+import { cleanPostingUrl } from "@/lib/posting-url";
 import { getUserUsageSummary } from "@/lib/usage";
 import { Analysis } from "@/models/Analysis";
 import { JobInput } from "@/models/JobInput";
@@ -47,13 +47,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const postingUrl = normalizePostingUrl(parsed.data.postingUrl);
-  if (postingUrl === null) {
-    return NextResponse.json(
-      { error: "Posting link must be a valid http or https URL" },
-      { status: 400 }
-    );
-  }
+  const postingUrl = cleanPostingUrl(parsed.data.postingUrl);
 
   const resume = await Resume.findOne({
     _id: parsed.data.resumeId,

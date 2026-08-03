@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { deleteResumeCascade } from "@/lib/delete-user-data";
-import { normalizePostingUrl } from "@/lib/posting-url";
+import { cleanPostingUrl } from "@/lib/posting-url";
 import { Resume } from "@/models/Resume";
 
 const patchSchema = z
@@ -69,14 +69,7 @@ export async function PATCH(
     postingUpdate.postingCompany = parsed.data.postingCompany;
   }
   if (parsed.data.postingUrl !== undefined) {
-    const postingUrl = normalizePostingUrl(parsed.data.postingUrl);
-    if (postingUrl === null) {
-      return NextResponse.json(
-        { error: "Posting link must be a valid http or https URL" },
-        { status: 400 }
-      );
-    }
-    postingUpdate.postingUrl = postingUrl;
+    postingUpdate.postingUrl = cleanPostingUrl(parsed.data.postingUrl);
   }
 
   if (Object.keys(postingUpdate).length) {
