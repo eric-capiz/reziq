@@ -138,7 +138,10 @@ export async function GET(
       resume.originalFilename ||
       "resume";
     const safeName = slugifyName(displayName);
-    const filename = `${safeName}-reziq.${parsed.data.format}`;
+    const companySlug = slugifyName(resume.postingCompany || "");
+    const filename = companySlug
+      ? `${safeName}-${companySlug}.${parsed.data.format}`
+      : `${safeName}.${parsed.data.format}`;
     const storageKey = `exports/${session.user.id}/${id}/${stamp}.${parsed.data.format}`;
 
     await uploadResumeObject({

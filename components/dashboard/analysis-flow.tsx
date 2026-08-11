@@ -502,7 +502,7 @@ export function AnalysisFlow({
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="([^"]+)"/);
-      const filename = match?.[1] ?? `resume-reziq.${format}`;
+      const filename = match?.[1] ?? `resume.${format}`;
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
