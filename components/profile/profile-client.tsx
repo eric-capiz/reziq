@@ -84,8 +84,16 @@ export function ProfileClient({
   );
   const [pending, startTransition] = useTransition();
   const [confirmResumeId, setConfirmResumeId] = useState<string | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState<"selected" | "all" | null>(
+    null
+  );
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [confirmAccount, setConfirmAccount] = useState(false);
   const [accountPhrase, setAccountPhrase] = useState("");
+
+  const selectedCount = resumes.filter((resume) => selectedIds[resume.id]).length;
+  const allSelected =
+    resumes.length > 0 && selectedCount === resumes.length;
 
   async function download(resumeId: string, format: "docx" | "pdf") {
     startTransition(async () => {
@@ -101,7 +109,7 @@ export function ProfileClient({
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="([^"]+)"/);
-      const filename = match?.[1] ?? `resume-reziq.${format}`;
+      const filename = match?.[1] ?? `resume.${format}`;
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -240,9 +248,77 @@ export function ProfileClient({
         return;
       }
       setResumes((prev) => prev.filter((item) => item.id !== resumeId));
+      setSelectedIds((prev) => {
+        const next = { ...prev };
+        delete next[resumeId];
+        return next;
+      });
       setConfirmResumeId(null);
       toast.success("Resume deleted");
     });
+  }
+
+  function deleteResumes(ids: string[]) {
+    if (ids.length === 0) {
+      toast.error("Select at least one resume");
+      return;
+    }
+    startTransition(async () => {
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          const res = await fetch(`/api/resumes/${id}`, { method: "DELETE" });
+          return { id, ok: res.ok };
+        })
+      );
+      const deleted = results.filter((item) => item.ok).map((item) => item.id);
+      const failed = results.length - deleted.length;
+
+      if (deleted.length) {
+        const deletedSet = new Set(deleted);
+        setResumes((prev) => prev.filter((item) => !deletedSet.has(item.id)));
+        setSelectedIds((prev) => {
+          const next = { ...prev };
+          for (const id of deleted) delete next[id];
+          return next;
+        });
+      }
+
+      setConfirmBulk(null);
+      setConfirmResumeId(null);
+
+      if (failed && deleted.length) {
+        toast.error(
+          `Deleted ${deleted.length}, but ${failed} could not be deleted`
+        );
+        return;
+      }
+      if (failed) {
+        toast.error("Could not delete resumes");
+        return;
+      }
+      toast.success(
+        deleted.length === 1
+          ? "Resume deleted"
+          : `${deleted.length} resumes deleted`
+      );
+    });
+  }
+
+  function toggleSelected(resumeId: string) {
+    setSelectedIds((prev) => ({
+      ...prev,
+      [resumeId]: !prev[resumeId],
+    }));
+  }
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds({});
+      return;
+    }
+    setSelectedIds(
+      Object.fromEntries(resumes.map((resume) => [resume.id, true]))
+    );
   }
 
   function deleteAccount() {
@@ -298,19 +374,98 @@ export function ProfileClient({
             </h2>
             <p className="mt-2 text-sm text-white/55">
               Each saved resume keeps one job title, company, and posting link.
-              Edit them anytime.
+              Edit them anytime. Select one or more to delete in bulk.
             </p>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            className="rounded-full bg-white/10 text-white hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
-            disabled={pending || resumes.length === 0}
-            onClick={exportJobPostings}
-          >
-            Export job postings CSV
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-full bg-white/10 text-white hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
+              disabled={pending || resumes.length === 0}
+              onClick={exportJobPostings}
+            >
+              Export job postings CSV
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-full bg-white/10 text-white hover:bg-[#7CFFB2] hover:text-[#0B0F14]"
+              disabled={pending || resumes.length === 0}
+              onClick={toggleSelectAll}
+            >
+              {allSelected ? "Clear selection" : "Select all"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="rounded-full text-[#FF5C35] hover:bg-[#FF5C35]/15 hover:text-[#FF5C35]"
+              disabled={pending || selectedCount === 0}
+              onClick={() => {
+                setConfirmResumeId(null);
+                setConfirmBulk(
+                  confirmBulk === "selected" ? null : "selected"
+                );
+              }}
+            >
+              Delete selected{selectedCount ? ` (${selectedCount})` : ""}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="rounded-full text-[#FF5C35] hover:bg-[#FF5C35]/15 hover:text-[#FF5C35]"
+              disabled={pending || resumes.length === 0}
+              onClick={() => {
+                setConfirmResumeId(null);
+                setConfirmBulk(confirmBulk === "all" ? null : "all");
+              }}
+            >
+              Delete all
+            </Button>
+          </div>
         </div>
+
+        {confirmBulk ? (
+          <div className="rounded-2xl border border-[#FF5C35]/35 bg-[#1A1010] p-4 text-sm text-white/75">
+            <p>
+              {confirmBulk === "all"
+                ? `Delete all ${resumes.length} saved resumes and their jobs, analyses, recommendations, and exports? This cannot be undone.`
+                : `Delete ${selectedCount} selected resume${selectedCount === 1 ? "" : "s"} and related data? This cannot be undone.`}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-full bg-[#FF5C35] text-white hover:bg-[#ff7a57]"
+                disabled={pending}
+                onClick={() =>
+                  deleteResumes(
+                    confirmBulk === "all"
+                      ? resumes.map((resume) => resume.id)
+                      : resumes
+                          .filter((resume) => selectedIds[resume.id])
+                          .map((resume) => resume.id)
+                  )
+                }
+              >
+                {confirmBulk === "all"
+                  ? "Yes, delete all resumes"
+                  : "Yes, delete selected"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+                onClick={() => setConfirmBulk(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         {resumes.length === 0 ? (
           <div className="rounded-3xl border border-white/10 bg-[#0B0F14]/50 p-6 text-sm text-white/60">
@@ -323,14 +478,25 @@ export function ProfileClient({
               postingCompany: resume.postingCompany,
               postingUrl: resume.postingUrl,
             };
+            const isSelected = Boolean(selectedIds[resume.id]);
             return (
               <article
                 key={resume.id}
-                className="rounded-3xl border border-white/10 bg-[#0B0F14]/55 p-5 sm:p-6"
+                className={`rounded-3xl border bg-[#0B0F14]/55 p-5 sm:p-6 ${
+                  isSelected
+                    ? "border-[#FF5C35]/45"
+                    : "border-white/10"
+                }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <label className="text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                    <label className="flex cursor-pointer items-center gap-2 text-[0.65rem] tracking-[0.14em] text-white/40 uppercase">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelected(resume.id)}
+                        className="size-4 accent-[#FF5C35]"
+                      />
                       Title
                     </label>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -483,11 +649,12 @@ export function ProfileClient({
                     variant="ghost"
                     className="rounded-full text-[#FF5C35] hover:bg-[#FF5C35]/15 hover:text-[#FF5C35]"
                     disabled={pending}
-                    onClick={() =>
+                    onClick={() => {
+                      setConfirmBulk(null);
                       setConfirmResumeId(
                         confirmResumeId === resume.id ? null : resume.id
-                      )
-                    }
+                      );
+                    }}
                   >
                     Delete resume
                   </Button>

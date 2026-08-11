@@ -22,8 +22,8 @@ const querySchema = z.object({
 });
 
 function slugifyName(name: string) {
-  const base = name
-    .trim()
+  const withoutExt = name.trim().replace(/\.(docx|doc|pdf)$/i, "");
+  const base = withoutExt
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
@@ -138,7 +138,10 @@ export async function GET(
       resume.originalFilename ||
       "resume";
     const safeName = slugifyName(displayName);
-    const filename = `${safeName}-reziq.${parsed.data.format}`;
+    const jobTitleSlug = slugifyName(resume.postingTitle || "");
+    const filename = jobTitleSlug
+      ? `${safeName}-${jobTitleSlug}.${parsed.data.format}`
+      : `${safeName}.${parsed.data.format}`;
     const storageKey = `exports/${session.user.id}/${id}/${stamp}.${parsed.data.format}`;
 
     await uploadResumeObject({
