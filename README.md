@@ -41,7 +41,7 @@ The product is an AI career assistant, not a generic AI resume writer. Feedback 
 * Next.js, TypeScript, Tailwind, Auth.js
 * MongoDB for users, resumes, jobs, analyses, recommendations, and exports
 * Cloudflare R2 for resume and export files
-* AI order: Groq (`llama-3.3-70b-versatile`), then Cerebras (`gpt-oss-120b`), then Gemini (`gemini-2.5-flash-lite`)
+* AI order: Groq (`openai/gpt-oss-120b`), then Cerebras (`gpt-oss-120b`), then Gemini (`gemini-2.5-flash-lite`)
 
 ## Local setup
 

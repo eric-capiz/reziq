@@ -1,7 +1,7 @@
 import Groq from "groq-sdk";
 import type { ChatMessage, ProviderAdapter, ProviderChatResult } from "@/lib/ai/types";
 
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "openai/gpt-oss-120b";
 
 export function createGroqAdapter(): ProviderAdapter {
   return {

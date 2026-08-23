@@ -18,7 +18,7 @@ const ACTIVE_WINDOW_MS = 2 * 60 * 1000;
 const PROVIDER_CAPS = {
   groq: {
     requestsPerDay: 1000,
-    tokensPerDay: 100000,
+    tokensPerDay: 200000,
     requestsPerAnalysis: 4,
     tokensPerAnalysis: 12000,
   },
