@@ -132,10 +132,10 @@ Build the AIService interface with provider adapters, sticky provider per analys
 
 ## Slice 12: Groq provider
 
-Implement Groq as the primary provider using llama 3.3 70b versatile. Log requests and token usage into AiProviderDaily.
+Implement Groq as the primary provider. Log requests and token usage into AiProviderDaily.
 
 **Status: Done**
-* Groq adapter uses llama-3.3-70b-versatile
+* Groq adapter uses openai/gpt-oss-120b (replaces retired llama-3.3-70b-versatile)
 * Requests and tokens are logged
 
 ## Slice 13: Gemini fallback provider
