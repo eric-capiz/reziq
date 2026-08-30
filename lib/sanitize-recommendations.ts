@@ -8,8 +8,189 @@ type StructuredLike = {
   otherSections?: unknown[];
 };
 
+const ONES = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+];
+
+const TENS = [
+  "",
+  "",
+  "twenty",
+  "thirty",
+  "forty",
+  "fifty",
+  "sixty",
+  "seventy",
+  "eighty",
+  "ninety",
+];
+
+const STOP_WORDS = new Set([
+  "that",
+  "this",
+  "with",
+  "from",
+  "into",
+  "over",
+  "after",
+  "before",
+  "about",
+  "using",
+  "across",
+  "through",
+  "their",
+  "there",
+  "have",
+  "been",
+  "were",
+  "also",
+  "plus",
+]);
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function integerToWords(n: number) {
+  if (!Number.isInteger(n) || n < 0 || n > 100) return [];
+  if (n === 100) return ["one hundred"];
+  if (n < 20) return [ONES[n]];
+  const ten = TENS[Math.floor(n / 10)];
+  const one = n % 10;
+  if (one === 0) return [ten];
+  return [`${ten} ${ONES[one]}`, `${ten}-${ONES[one]}`];
+}
+
 function normalize(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9.+#]/g, "");
+}
+
+function normalizeForCompare(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/(\d+(?:\.\d+)?)\s*per\s*-?cents?/g, "$1%")
+    .replace(/(\d+)\s+plus\b/g, "$1+")
+    .replace(/[^a-z0-9.+#$%]/g, "");
+}
+
+function meaningfulWords(text: string) {
+  return (text.toLowerCase().match(/[a-z]{4,}/g) ?? []).filter(
+    (word) => !STOP_WORDS.has(word)
+  );
+}
+
+export function restoreOriginalMetrics(currentText: string, proposedText: string) {
+  let next = proposedText;
+
+  for (const match of currentText.matchAll(/(\d+(?:\.\d+)?)%/g)) {
+    const token = match[0];
+    const num = match[1];
+    if (next.includes(token)) continue;
+
+    const variants = [
+      `${num} percent`,
+      `${num} per cent`,
+      `${num} percentage`,
+      `${num}-percent`,
+    ];
+    const asNumber = Number(num);
+    if (Number.isInteger(asNumber)) {
+      for (const words of integerToWords(asNumber)) {
+        variants.push(
+          `${words} percent`,
+          `${words} per cent`,
+          `${words} percentage`
+        );
+      }
+    }
+
+    for (const variant of variants) {
+      const re = new RegExp(escapeRegExp(variant).replace(/ /g, "\\s+"), "gi");
+      const updated = next.replace(re, token);
+      if (updated !== next) {
+        next = updated;
+        break;
+      }
+    }
+  }
+
+  for (const match of currentText.matchAll(/(\d+)\+/g)) {
+    const token = match[0];
+    const num = match[1];
+    if (next.includes(token)) continue;
+    next = next.replace(new RegExp(`${escapeRegExp(num)}\\s+plus\\b`, "gi"), token);
+    const asNumber = Number(num);
+    if (Number.isInteger(asNumber)) {
+      for (const words of integerToWords(asNumber)) {
+        next = next.replace(
+          new RegExp(`${escapeRegExp(words)}\\s+plus\\b`, "gi"),
+          token
+        );
+      }
+    }
+  }
+
+  for (const match of currentText.matchAll(/\$[\d,]+(?:\.\d+)?k?\b/gi)) {
+    const token = match[0];
+    if (next.includes(token)) continue;
+    const bare = token.slice(1);
+    next = next.replace(
+      new RegExp(`(?:usd\\s+)?${escapeRegExp(bare)}(?:\\s+dollars?)?`, "gi"),
+      token
+    );
+  }
+
+  return next;
+}
+
+export function stripUnsupportedClauses(currentText: string, proposedText: string) {
+  const currentWords = new Set(meaningfulWords(currentText));
+  const ending = proposedText.match(/[.!?]+$/)?.[0] ?? "";
+  const core = proposedText.replace(/[.!?]+$/, "");
+  const parts = core.split(/(?<=[a-z0-9%$+])[,;]\s+/);
+  if (parts.length < 2) return proposedText;
+
+  const kept = parts.filter((part, index) => {
+    if (index === 0) return true;
+    const words = meaningfulWords(part);
+    if (words.length === 0) return true;
+    const hits = words.filter((word) => currentWords.has(word)).length;
+    return hits >= Math.ceil(words.length * 0.6);
+  });
+
+  if (kept.length === parts.length) return proposedText;
+  if (kept.length === 0) return currentText;
+  return `${kept.join(", ").replace(/[,;\s]+$/, "")}${ending}`;
+}
+
+function polishProposedText(currentText: string, proposedText: string) {
+  const restored = restoreOriginalMetrics(currentText, proposedText);
+  const withoutFluff = stripUnsupportedClauses(currentText, restored);
+  return stripResumeDashes(withoutFluff);
+}
+
+function isNoOpRewrite(currentText: string, proposedText: string) {
+  if (!currentText.trim()) return false;
+  return normalizeForCompare(currentText) === normalizeForCompare(proposedText);
 }
 
 export function stripResumeDashes(text: string) {
@@ -162,15 +343,16 @@ export function sanitizeRecommendationResult(
         };
       }
 
-      const invented = proposalAddsMissingSkill(
-        item.proposedText,
-        resume,
-        jobSkills
+      const proposedText = polishProposedText(
+        item.currentText,
+        item.proposedText
       );
+      if (isNoOpRewrite(item.currentText, proposedText)) return null;
+      const invented = proposalAddsMissingSkill(proposedText, resume, jobSkills);
       if (invented) return null;
       return {
         ...item,
-        proposedText: stripResumeDashes(item.proposedText),
+        proposedText,
       };
     })
     .filter(Boolean)

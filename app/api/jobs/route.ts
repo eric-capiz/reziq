@@ -18,6 +18,24 @@ const bodySchema = z.object({
   postingUrl: z.string().trim().max(2000).optional().default(""),
 });
 
+async function deleteAnalysesForJobs(userId: string, jobIds: unknown[]) {
+  if (!jobIds.length) return;
+  const analyses = await Analysis.find({
+    userId,
+    jobId: { $in: jobIds },
+  }).select("_id");
+  const analysisIds = analyses.map((item) => item._id);
+  if (!analysisIds.length) return;
+  await RecommendationSet.deleteMany({
+    userId,
+    analysisId: { $in: analysisIds },
+  });
+  await Analysis.deleteMany({
+    userId,
+    _id: { $in: analysisIds },
+  });
+}
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user) {
@@ -74,31 +92,22 @@ export async function POST(request: Request) {
 
   if (extras.length) {
     const extraIds = extras.map((item) => item._id);
-    const analyses = await Analysis.find({
-      userId: session.user.id,
-      jobId: { $in: extraIds },
-    }).select("_id");
-    const analysisIds = analyses.map((item) => item._id);
-    if (analysisIds.length) {
-      await RecommendationSet.deleteMany({
-        userId: session.user.id,
-        analysisId: { $in: analysisIds },
-      });
-      await Analysis.deleteMany({
-        userId: session.user.id,
-        _id: { $in: analysisIds },
-      });
-    }
+    await deleteAnalysesForJobs(session.user.id, extraIds);
     await JobInput.deleteMany({
       userId: session.user.id,
       _id: { $in: extraIds },
     });
   }
 
+  const jobTextChanged = Boolean(job && job.rawText !== parsed.data.rawText);
+
   if (job) {
     job.rawText = parsed.data.rawText;
     job.structured = structured;
     await job.save();
+    if (jobTextChanged) {
+      await deleteAnalysesForJobs(session.user.id, [job._id]);
+    }
   } else {
     job = await JobInput.create({
       userId: session.user.id,
@@ -108,16 +117,18 @@ export async function POST(request: Request) {
     });
   }
 
-  await Resume.collection.updateOne(
-    { _id: resume._id },
-    {
-      $set: {
-        postingTitle: parsed.data.postingTitle,
-        postingCompany: parsed.data.postingCompany,
-        postingUrl,
-      },
-    }
-  );
+  const resumeUpdate: Record<string, unknown> = {
+    $set: {
+      postingTitle: parsed.data.postingTitle,
+      postingCompany: parsed.data.postingCompany,
+      postingUrl,
+    },
+  };
+  if (jobTextChanged) {
+    resumeUpdate.$unset = { structuredDraft: "" };
+  }
+
+  await Resume.collection.updateOne({ _id: resume._id }, resumeUpdate);
 
   return NextResponse.json({
     id: String(job._id),
