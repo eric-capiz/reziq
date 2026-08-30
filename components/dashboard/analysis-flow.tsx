@@ -227,6 +227,34 @@ export function AnalysisFlow({
     setStep(0);
   }
 
+  function startNewJob() {
+    setJob(null);
+    setJobText("");
+    setPostingTitle("");
+    setPostingCompany("");
+    setPostingUrl("");
+    setAnalysis(null);
+    setRecommendationSet(null);
+    setStructuredDraft(null);
+    setStep(1);
+    toast.message("Resume kept. Paste a new job to run Rez Desk again.");
+  }
+
+  function startOver() {
+    setFile(null);
+    setResume(null);
+    setJob(null);
+    setJobText("");
+    setPostingTitle("");
+    setPostingCompany("");
+    setPostingUrl("");
+    setAnalysis(null);
+    setRecommendationSet(null);
+    setStructuredDraft(null);
+    setStep(0);
+    toast.message("Starting a new Rez Desk run.");
+  }
+
   async function uploadResume() {
     if (!canUpload) {
       toast.error(outOfUsesMessage ?? "Out of uses today");
@@ -1369,6 +1397,37 @@ export function AnalysisFlow({
                       </section>
                     ))}
                 </article>
+              </div>
+            ) : null}
+
+            {resume ? (
+              <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-5">
+                <p className="text-xs font-semibold tracking-[0.16em] text-white/45 uppercase">
+                  Start another run
+                </p>
+                <p className="mt-2 text-sm text-white/60">
+                  Keep this resume and paste a new job, or start over with a
+                  different file.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    className="rounded-full bg-[#FF5C35] px-5 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ff7a57] hover:shadow-[0_12px_30px_rgba(255,92,53,0.35)]"
+                    disabled={pending}
+                    onClick={startNewJob}
+                  >
+                    New job
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="rounded-full border border-white/15 text-white transition-all duration-200 hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/10 hover:text-white"
+                    disabled={pending}
+                    onClick={startOver}
+                  >
+                    Start over
+                  </Button>
+                </div>
               </div>
             ) : null}
           </section>
